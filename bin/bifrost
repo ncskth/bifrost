@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+import contextlib
+from sys import stdout
+from pathlib import Path
+
+from bifrost import encode
+
+@contextlib.contextmanager
+def writer(filename):
+    if filename is None:
+        out = stdout
+    else:
+        assert not Path(filename).exists(), f"Filename {filename} already exist and cannot be overwritten"
+        out = open(filename, "w")
+    yield out
+    if filename is not None:
+        out.close()
+
+parser = ArgumentParser('Bifrost - Parsing Norse modules into SpiNNaker executables')
+parser.add_argument('model', type=str)
+parser.add_argument('parameters', type=str)
+parser.add_argument('-o', '--output', type=str, default=None)
+
+args = parser.parse_args()
+with writer(args.output) as output_writer:
+    encode.export(args.model, args.parameters, output_writer)
