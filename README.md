@@ -9,7 +9,7 @@ It is named after Bifrost, the bridge between middle earth and the realms of the
 Models are encoded by providing the Python import path to the model class as well as parameter values from a [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) checkpoints file:
 
 ```bash
-python bifrost.py model.SNNModel > output.py
+python bifrost.py model.SNNModel weights.ckpt > output.py
 ```
 
 The output can now be evaluated inside a SpiNNaker-friendly environment (see below):
