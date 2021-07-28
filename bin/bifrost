@@ -5,24 +5,36 @@ import contextlib
 from sys import stdout
 from pathlib import Path
 
-from bifrost import encode
+from bifrost import export
+
 
 @contextlib.contextmanager
 def writer(filename):
     if filename is None:
         out = stdout
     else:
-        assert not Path(filename).exists(), f"Filename {filename} already exist and cannot be overwritten"
+        assert not Path(
+            filename
+        ).exists(), f"Filename {filename} already exist and cannot be overwritten"
         out = open(filename, "w")
     yield out
     if filename is not None:
         out.close()
 
-parser = ArgumentParser('Bifrost - Parsing Norse modules into SpiNNaker executables')
-parser.add_argument('model', type=str)
-parser.add_argument('parameters', type=str)
-parser.add_argument('-o', '--output', type=str, default=None)
+
+parser = ArgumentParser("Bifrost - Parsing Norse modules into SpiNNaker executables")
+parser.add_argument(
+    "model",
+    type=str,
+    help="The path to the model as a python import statement, e. g. my_model.snn.SNNModel",
+)
+parser.add_argument(
+    "shape",
+    type=str,
+    help="The shape of the input data to provide, e. g. (8, 3, 28, 28) in BCXY format",
+)
+parser.add_argument("-o", "--output", type=str, default=None)
 
 args = parser.parse_args()
 with writer(args.output) as output_writer:
-    encode.export(args.model, args.parameters, output_writer)
+    export.export(args.model, args.shape, output_writer)

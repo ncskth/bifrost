@@ -1,2 +1,7 @@
 bifrost.egg-info/
 bifrost/__pycache__/
+.vscode/
+.ipynb_checkpoints/
+*.gv
+*.pdf
+*.svg

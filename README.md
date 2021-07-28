@@ -6,16 +6,16 @@ It is named after Bifrost, the bridge between middle earth and the realms of the
 
 ## Usage
 
-Models are encoded by providing the Python import path to the model class as well as parameter values from a [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) checkpoints file:
+Models are encoded by providing the Python import path to the model class as well as the shape of input tensor (here with 1 timestep, 8 batches, 2 channels, and a 640x480 image input):
 
 ```bash
-python bifrost.py model.SNNModel weights.ckpt > output.py
+python bifrost.py model.SNNModel "(1, 8, 2, 640, 480)" > output.py
 ```
 
-The output can now be evaluated inside a SpiNNaker-friendly environment (see below):
+The output can now be evaluated with a specific set of parameter values from a [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) checkpoint file. Note that the command must run inside a SpiNNaker-friendly environment (see below):
 
 ```bash
-python output.py
+python output.py weights.ckpt 
 ```
 
 By "SpiNNaker-friendly environment" we mean need a working installation of [sPyNNaker](https://github.com/SpiNNakerManchester/sPyNNaker) and access to a SpiNNaker machine.
