@@ -1,3 +1,5 @@
+import pytest
+
 from norse.torch import LIFParameters
 
 from bifrost.ir.layer import Conv2dLIFLayer, LIFLayer
@@ -37,22 +39,27 @@ def test_lif_neuron_to_pynn():
     p = LIFParameters()
     p_dict = population.export_dict(
         {
-            "tau_m": 1 / p.tau_mem_inv,
-            "tau_syn_E": 1 / p.tau_syn_inv,
-            "tau_syn_I": 1 / p.tau_syn_inv,
-            "v_leak": p.v_leak,
-            "v_reset": p.v_reset,
-            "v_th": p.v_th,
+            "tau_m": 1 / float(p.tau_mem_inv),
+            "tau_syn_E": 1 / float(p.tau_syn_inv),
+            "tau_syn_I": 1 / float(p.tau_syn_inv),
+            "v_reset": float(p.v_reset),
+            "v_thresh": float(p.v_th),
         }
     )
     s = population.export_lif_neuron_type(p)
     assert s == pynn.Statement(f"p.IF_curr_exp({p_dict.value})", imports=p_dict.imports)
 
 
-def test_dict_to_pynn():
-    d = {"test": 12, 2: "value"}
+def test_dict_to_pynn_parameters():
+    d = {"test": 12, "tau_m": "value"}
     actual = population.export_dict(d)
-    assert actual == pynn.Statement("{'test': 12,2: 'value',}")
+    assert actual == pynn.Statement("test=12,tau_m='value'")
+
+
+def test_dict_to_pynn_parameters_fail():
+    d = {"test": 12, 2: "value"}
+    with pytest.raises(ValueError):
+        actual = population.export_dict(d)
 
 
 # def test_ann_to_graph():

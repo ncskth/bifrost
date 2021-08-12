@@ -18,4 +18,6 @@ RUN support/automatic_make.sh
 
 ADD .spynnaker.cfg /root/
 
-RUN pip3 install git+https://github.com/ncskth/bifrost
+ADD . /bifrost
+
+RUN pip3 install -e /bifrost

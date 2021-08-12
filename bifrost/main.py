@@ -14,7 +14,7 @@ def export(model, text_shape, writer):
     data = torch.zeros(shape)
     # TODO: Parse graph
     # graph = model_to_graph(model, data)
-    layers = [LIFLayer("l1", 10), LIFLayer("l2", 20)]
+    layers = [LIFLayer("l1", 1), LIFLayer("l2", 1)]
     connections = [Connection("l1", "l2", AllToAllConnector())]
 
     net = Network(layers=layers, connections=connections, runtime=100.0, timestep=1.0)

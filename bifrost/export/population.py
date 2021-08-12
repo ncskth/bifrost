@@ -43,12 +43,11 @@ def export_layer_conv2d(layer: Conv2dLIFLayer) -> Statement:
 
 def export_lif_neuron_type(p: LIFParameters) -> Statement:
     pynn_parameters = {
-        "tau_m": 1 / p.tau_mem_inv,
-        "tau_syn_E": 1 / p.tau_syn_inv,
-        "tau_syn_I": 1 / p.tau_syn_inv,
-        "v_leak": p.v_leak,
-        "v_reset": p.v_reset,
-        "v_th": p.v_th,
+        "tau_m": 1 / float(p.tau_mem_inv),
+        "tau_syn_E": 1 / float(p.tau_syn_inv),
+        "tau_syn_I": 1 / float(p.tau_syn_inv),
+        "v_reset": float(p.v_reset),
+        "v_thresh": float(p.v_th),
     }
     pynn_parameter_statement = export_dict(pynn_parameters)
     return Statement(
@@ -58,18 +57,21 @@ def export_lif_neuron_type(p: LIFParameters) -> Statement:
 
 
 def export_dict(d: Dict[Any, Any]) -> Statement:
-    def _export_dict_string(value: Any) -> str:
+    def _export_dict_key(key: Any) -> str:
+        if not isinstance(key, str):
+            raise ValueError("Parameter key must be a string", key)
+        return str(key)
+
+    def _export_dict_value(value: Any) -> str:
         if isinstance(value, str):
             return f"'{str(value)}'"
         else:
             return str(value)
 
-    pynn_dict = "{"
+    pynn_dict = ""
     for key, value in d.items():
-        pynn_dict = (
-            pynn_dict + f"{_export_dict_string(key)}: {_export_dict_string(value)},"
-        )
-    return Statement(pynn_dict + "}")
+        pynn_dict = pynn_dict + f"{_export_dict_key(key)}={_export_dict_value(value)},"
+    return Statement(pynn_dict[:-1])
 
 
 # def output_ethernet(layer: )
