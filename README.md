@@ -4,13 +4,15 @@
 
 It is named after Bifrost, the bridge between middle earth and the realms of the gods in Norse mythology.
 
-## Usage
+## Usage: PyTorch -> PyNN script
 
 Models are encoded by providing the Python import path to the model class as well as the shape of input tensor (here with 1 timestep, 8 batches, 2 channels, and a 640x480 image input):
 
 ```bash
-python bifrost.py model.SNNModel "(1, 8, 2, 640, 480)" > output.py
+bifrost model.SNNModel "(1, 8, 2, 640, 480)" > output.py
 ```
+
+## Usage: Execute PyNN script with weights file 
 
 The output can now be evaluated with a specific set of parameter values from a [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/) checkpoint file. Note that the command must run inside a SpiNNaker-friendly environment (see below):
 

@@ -5,7 +5,7 @@ import contextlib
 from sys import stdout
 from pathlib import Path
 
-from bifrost import export
+from bifrost import main
 
 
 @contextlib.contextmanager
@@ -37,4 +37,4 @@ parser.add_argument("-o", "--output", type=str, default=None)
 
 args = parser.parse_args()
 with writer(args.output) as output_writer:
-    export.export(args.model, args.shape, output_writer)
+    main.export(args.model, args.shape, output_writer)
