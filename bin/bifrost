@@ -2,11 +2,14 @@
 
 from argparse import ArgumentParser
 import contextlib
-from sys import stdout
+from sys import stdout, path
 from pathlib import Path
 
-from bifrost import main
 
+# Append bifrost package to path
+path.append(Path("__file__").parent.parent.absolute())
+
+import bifrost.main as main
 
 @contextlib.contextmanager
 def writer(filename):
