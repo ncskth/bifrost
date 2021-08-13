@@ -2,15 +2,13 @@
 Internal representations (IR) for internal use
 """
 from dataclasses import dataclass
-import torch
-
+import numpy as np
 from bifrost.ir.layer import Layer
 
 
 @dataclass
 class Synapse:
     pass
-
 
 @dataclass
 class StaticSynapse(Synapse):
@@ -19,18 +17,16 @@ class StaticSynapse(Synapse):
 
 @dataclass
 class Connector:
-    pass
-
-
-@dataclass
-class AllToAllConnector:
-    pass
-
+    weights: np.ndarray
 
 @dataclass
-class ConvolutionConnector:
-    weights: torch.Tensor
-    padding: torch.Tensor = torch.tensor([1, 1])
+class AllToAllConnector(Connector):
+    """Also Known As DenseConnector"""
+    pass
+
+@dataclass
+class ConvolutionConnector(Connector):
+    pass
 
 
 @dataclass
@@ -38,4 +34,4 @@ class Connection:
     pre: str
     post: str
     connector: Connector
-    synapse: Synapse = StaticSynapse()
+    synapse: Synapse = StaticSynapse

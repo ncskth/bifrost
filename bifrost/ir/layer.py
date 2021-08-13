@@ -1,21 +1,22 @@
 from dataclasses import dataclass
-from norse.torch import LIFParameters
-
+from norse.torch import Conv2dParameters
+from bifrost.ir.cell import Cell
 
 @dataclass
 class Layer:
     name: str
 
+@dataclass
+class Conv2dLayer(Layer):
+    cell: Cell
+    parameters: Conv2dParameters
 
 @dataclass
-class Conv2dLIFLayer(Layer):
-    width: int
-    height: int
-    channels: int
-    parameters: LIFParameters = LIFParameters()
-
+class DenseLayer(Layer):
+    cell: Cell
+    parameters: DenseParameters
 
 @dataclass
 class LIFLayer(Layer):
-    neurons: int
-    parameters: LIFParameters = LIFParameters()
+    size: int
+    cell: LIFCell
