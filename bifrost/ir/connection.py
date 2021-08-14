@@ -31,7 +31,7 @@ class ConvolutionConnector(Connector):
 
 @dataclass
 class Connection:
-    pre: str
-    post: str
+    pre: Layer
+    post: Layer
     connector: Connector
     synapse: Synapse = StaticSynapse

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from norse.torch import Conv2dParameters
+from bifrost.ir.parameters import Conv2dParameters
 from bifrost.ir.cell import Cell
 
 @dataclass
 class Layer:
     name: str
+    size: int
 
 @dataclass
 class Conv2dLayer(Layer):
@@ -12,7 +13,7 @@ class Conv2dLayer(Layer):
     parameters: Conv2dParameters
 
 @dataclass
-class DenseLayer(Layer):
+class PoolDenseLayer(Layer):
     cell: Cell
     parameters: DenseParameters
 
