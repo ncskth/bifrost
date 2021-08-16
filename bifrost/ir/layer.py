@@ -4,6 +4,7 @@ from bifrost.ir.cell import Cell
 
 @dataclass
 class Layer:
+    index: int
     name: str
     size: int
 
