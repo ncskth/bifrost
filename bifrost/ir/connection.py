@@ -23,7 +23,7 @@ class Connector:
 
 
 @dataclass
-class AllToAllConnector:
+class AllToAllConnector(Connector):
     pass
 
 
@@ -35,7 +35,7 @@ class ConvolutionConnector:
 
 @dataclass
 class Connection:
-    pre: str
-    post: str
+    pre: Layer
+    post: Layer
     connector: Connector
     synapse: Synapse = StaticSynapse()
