@@ -65,3 +65,7 @@ input = {
     'image_dataset': {
     }
 }
+
+CELL_TYPE_PARAM = ('neurons.__class__.__name__', )
+SYNAPSE_TYPE_PARAM = ('upstream_synapses[0].__class__.__name__', )
+LAYER_TYPE_PARAM = ('__class__.__name__', )
