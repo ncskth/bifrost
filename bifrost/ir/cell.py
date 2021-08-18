@@ -1,17 +1,21 @@
 from dataclasses import dataclass
-from bifrost.ir.parameters import (IFParameters, LIFParameters)
+from bifrost.ir.parameters import (Parameters)
 
 
 @dataclass
 class Cell:
-    pass
+    parameters: Parameters
 
 @dataclass
 class LIFCell(Cell):
-    parameters: LIFParameters
+    pass
+
+@dataclass
+class LICell(Cell):
+    pass
 
 @dataclass
 class IFCell(Cell):
-    parameters: IFParameters
+    pass
 
 

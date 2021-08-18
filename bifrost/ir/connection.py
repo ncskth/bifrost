@@ -14,6 +14,14 @@ class Synapse:
 class StaticSynapse(Synapse):
     pass
 
+@dataclass
+class ConvolutionSynapse(StaticSynapse):
+    pass
+
+@dataclass
+class DenseSynapse(StaticSynapse):
+    pass
+
 
 @dataclass
 class Connector:
@@ -34,4 +42,4 @@ class Connection:
     pre: Layer
     post: Layer
     connector: Connector
-    synapse: Synapse = StaticSynapse
+    synapse: Synapse
