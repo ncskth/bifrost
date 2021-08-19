@@ -1,3 +1,4 @@
+from bifrost.ir.parameter import ParameterContext
 from dataclasses import dataclass
 from typing import Dict, List
 
@@ -21,3 +22,4 @@ def pynn_footer(runtime):
 p.run({runtime})
 p.end()
 """
+

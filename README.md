@@ -20,7 +20,7 @@ The output can now be evaluated with a specific set of parameter values from a [
 python output.py weights.ckpt 
 ```
 
-By "SpiNNaker-friendly environment" we mean need a working installation of [sPyNNaker](https://github.com/SpiNNakerManchester/sPyNNaker) and access to a SpiNNaker machine.
+By "SpiNNaker-friendly environment" we mean a working installation of [sPyNNaker](https://github.com/SpiNNakerManchester/sPyNNaker) and access to a SpiNNaker machine.
 See the attached `Dockerfile` for a quick environment installation.
 
 ## Credits
@@ -28,8 +28,9 @@ See the attached `Dockerfile` for a quick environment installation.
 Bifrost is maintained by 
 
 * [Jens E. Pedersen](https://www.kth.se/profile/jeped) (@GitHub [jegp](https://github.com/jegp/)), doctoral student at KTH Royal Institute of Technology, Sweden.
+* [Garibaldi Pineda Garcia](https://profiles.sussex.ac.uk/p467078-garibaldi-pineda-garcia) (@GitHub [chanokin](https://github.com/chanokin/)), PostDoc at The University of Sussex, UK.
 
-The project is indebted to the work by [Petrut A. Bogdan](https://github.com/pabogdan/) on JSON conversions from ANN to SNN.
+The project is indebted to the work by [Petrut A. Bogdan](https://github.com/pabogdan/) on JSON conversions from ANN to SNN and to [Simon Davidson](http://apt.cs.manchester.ac.uk/people/sdavidson/) for advice and supervision.
 
 The work has received funding from the EC Horizon 2020 Framework Programme under Grant Agreements 785907 and 945539 (HBP)
 

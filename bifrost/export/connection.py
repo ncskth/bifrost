@@ -1,3 +1,4 @@
+from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.layer import LIFLayer
 import torch
 
@@ -5,17 +6,17 @@ from bifrost.ir.connection import *
 from .pynn import Statement
 
 
-def export_connection(connection: Connection):
+def export_connection(connection: Connection, context: ParameterContext[str]):
     if not isinstance(connection.synapse, StaticSynapse):
         raise ValueError("Unknown Synapse", connection.synapse)
-    pynn_connector = export_connector(connection.connector)
+    pynn_connector = export_connector(connection.connector, context)
     return Statement(
         f"p.Projection({connection.pre}, {connection.post}, {pynn_connector.value}, p.StaticSynapse())",
         imports=pynn_connector.imports,
     )
 
 
-def export_connector(connector: Connector) -> Statement:
+def export_connector(connector: Connector, context: ParameterContext) -> Statement:
     if isinstance(connector, AllToAllConnector):
         return Statement("p.AllToAllConnector()")
     elif isinstance(connector, ConvolutionConnector):

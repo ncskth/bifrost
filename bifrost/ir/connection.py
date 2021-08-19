@@ -24,10 +24,6 @@ class DenseSynapse(StaticSynapse):
 
 
 @dataclass
-class Connector:
-    weights: np.ndarray
-
-@dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
     pass

@@ -3,40 +3,43 @@ from norse.torch.functional.lif import LIFParameters
 from torch._C import Value
 from bifrost.ir.layer import LIFLayer, Layer, Conv2dLIFLayer
 from bifrost.ir.input import SpiNNakerSPIFInput
+from bifrost.ir.parameter import ParameterContext
 from .pynn import Statement
 
 
-def export_layer(layer: Layer) -> Statement:
+def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
-        return export_layer_spif(layer)
+        return export_layer_spif(layer, context)
     elif isinstance(layer, Conv2dLIFLayer):
-        return export_layer_conv2d(layer)
+        return export_layer_conv2d(layer, context)
     elif isinstance(layer, LIFLayer):
-        return export_layer_lif(layer)
+        return export_layer_lif(layer, context)
     else:
         raise ValueError("Unknown layer type", layer)
 
 
-def export_layer_lif(layer: LIFLayer) -> Statement:
+def export_layer_lif(layer: LIFLayer, context: ParameterContext[str]) -> Statement:
     lif_p = export_lif_neuron_type(layer.parameters)
     return Statement(
-        f"{layer.name} = p.Population({layer.neurons}, {lif_p.value})",
+        f"{layer.variable} = p.Population({layer.neurons}, {lif_p.value})",
         imports=lif_p.imports,
     )
 
 
 def export_layer_spif(layer: SpiNNakerSPIFInput) -> Statement:
     return Statement(
-        f"""{layer.name} = p.Population(None, p.external_devices.SPIFRetinaDevice(\
+        f"""{layer.variable} = p.Population(None, p.external_devices.SPIFRetinaDevice(\
 base_key=0, width={layer.x}, height={layer.y}, sub_width={layer.x_sub}, sub_height={layer.y_sub},\
 input_x_shift={layer.x_shift}, input_y_shift={layer.y_shift}))"""
     )
 
 
-def export_layer_conv2d(layer: Conv2dLIFLayer) -> Statement:
+def export_layer_conv2d(
+    layer: Conv2dLIFLayer, context: ParameterContext[str]
+) -> Statement:
     lif = export_lif_neuron_type(layer.parameters)
     return Statement(
-        f"{layer.name} = p.Population({layer.width * layer.height}, {lif.value}, structure=Grid2D({layer.width / layer.height}))",
+        f"{layer.variable} = p.Population({layer.width * layer.height}, {lif.value}, structure=Grid2D({layer.width / layer.height}))",
         ["from pyNN.space import Grid2D"] + list(lif.imports),
     )
 
