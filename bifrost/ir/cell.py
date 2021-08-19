@@ -1,10 +1,8 @@
 from dataclasses import dataclass
-from bifrost.ir.parameters import (Parameters)
-
 
 @dataclass
 class Cell:
-    parameters: Parameters
+    pass
 
 @dataclass
 class LIFCell(Cell):

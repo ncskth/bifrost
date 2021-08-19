@@ -1,11 +1,11 @@
-from bifrost.translate.mlgenn.translations import (
+from bifrost.extract.mlgenn.translations import (
     cells as cell_translations,
     layers as layer_translations,
     CELL_TYPE_PARAM,
     SYNAPSE_TYPE_PARAM,
     LAYER_TYPE_PARAM,
 )
-from bifrost.translate.utils import get_param
+from bifrost.extract.utils import get_param
 from copy import deepcopy
 
 

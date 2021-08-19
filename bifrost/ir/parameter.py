@@ -17,3 +17,7 @@ class ParameterContext(Generic[Output]):
     @abstractmethod
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
         ...
+
+    @abstractmethod
+    def cell_params(self, layer: str, channel_in: int, channel_out: int) -> Output:
+        ...

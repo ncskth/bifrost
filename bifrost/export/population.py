@@ -7,6 +7,7 @@ from bifrost.ir.parameter import ParameterContext
 from .pynn import Statement
 
 
+
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
         return export_layer_spif(layer, context)
