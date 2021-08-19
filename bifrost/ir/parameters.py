@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Set, Any, TypeVar, Generic
+
+
 
 @dataclass
 class Parameters:
