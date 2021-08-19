@@ -1,5 +1,5 @@
 import numpy as np
-from bifrost.translate.utils import (size_from_shape, layer_attr)
+from bifrost.extract.utils import (size_from_shape, layer_attr)
 
 cells = {
     'IFNeurons': {
