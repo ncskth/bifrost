@@ -4,6 +4,8 @@ from bifrost.extract.utils import (size_from_shape, layer_attr)
 cells = {
     'IFNeurons': {
         'target': 'IFCell',
+        'synapse_type': 'current',
+        'synapse_shape': 'delta',
         'check': ('neurons.__class__.__name__', ),
         'v_thresh': ('neurons.nrn.extra_global_params[Vthr].view', np.copy),
         'v_rest': ('neurons.nrn.vars[Vmem].view', np.copy)
@@ -49,13 +51,13 @@ layers = {
             'check': ('upstream_synapses[0].__class__.__name__', ),
             'pool_shape': ('upstream_synapses[0].pool_size', ),
             'pool_stride': ('upstream_synapses[0].pool_strides', ),
-            'size': ('shape', ),
+            'size': ('shape[0]', ),
             'weights': ('upstream_synapses[0].weights', np.copy),
         },
         'DenseSynapses': {
             'target': 'PoolDenseLayer',
             'check': ('upstream_synapses[0].__class__.__name__', ),
-            'size': ('shape', ),
+            'size': ('shape[0]', ),
             'weights': ('upstream_synapses[0].weights', np.copy),
         },
     }

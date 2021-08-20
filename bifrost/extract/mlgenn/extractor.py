@@ -9,15 +9,16 @@ from bifrost.extract.utils import get_param
 from copy import deepcopy
 
 
-def get_params_from_dict(source, source_type: str, pdict: dict):
-    target = pdict.pop('target')
+def get_params_from_dict(source, source_type: str, pdict: dict,
+                         ignore_keys=('target',), try_reduce=False):
+    ignore_dict = {k: pdict.pop(k, None) for k in ignore_keys}
     check_type = pdict.pop('check')
     assert source_type == get_param(source, check_type), \
             'not the same layer type as initially specified'
 
-    params = {tgt_param: get_param(source, access)
+    params = {tgt_param: get_param(source, access, try_reduce)
               for tgt_param, access in pdict.items()}
-    params['target'] = target
+    params.update(ignore_dict)
 
     return params
 
@@ -30,7 +31,9 @@ def extract_cell_params(layer, cell_trans):
 
     cell_type = get_param(layer,  CELL_TYPE_PARAM)
     pdict = deepcopy(cell_trans[cell_type])
-    return get_params_from_dict(layer, cell_type, pdict)
+    ignore_keys = ['target', 'synapse_type', 'synapse_shape']
+    return get_params_from_dict(layer, cell_type, pdict, ignore_keys,
+                                try_reduce=True)
 
 
 def extract_layer_params(layer, layer_trans, cell_trans):

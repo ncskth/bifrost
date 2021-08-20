@@ -6,7 +6,7 @@ def size_from_shape(shape):
 def layer_attr(layer, attr):
     return getattr(layer, attr)
 
-def get_param(obj, trans):
+def get_param(obj, trans, try_reduce=False):
     o = obj
     param_chain = trans[0].split('.')
     for p in param_chain:
@@ -34,12 +34,13 @@ def get_param(obj, trans):
     if len(trans) == 2:
         o = trans[1](o)
 
-    try:
-        mean_v = np.mean(o)
-        if np.isclose(mean_v, o[0]):
-            o = mean_v
-    except: # try to
-        pass
+    if try_reduce:
+        try:
+            mean_v = np.mean(o)
+            if np.isclose(mean_v, o[0]):
+                o = mean_v
+        except:  # try to
+            pass
 
     return o
 
