@@ -8,7 +8,8 @@ from bifrost.ir.layer import Layer
 
 @dataclass
 class Synapse:
-    pass
+    synapse_type: str = 'current'
+    synapse_shape: str = 'delta'
 
 @dataclass
 class StaticSynapse(Synapse):
@@ -24,8 +25,16 @@ class DenseSynapse(StaticSynapse):
 
 
 @dataclass
+class Connector:
+    pass
+
+@dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
+    pass
+
+@dataclass
+class DenseConnector(Connector):
     pass
 
 @dataclass

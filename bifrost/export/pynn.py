@@ -7,11 +7,16 @@ from typing import Dict, List
 class Statement:
     value: str
     imports: List[str] = ()
+    preamble: str = ""
 
 
 def pynn_header(timestep=1.0):
     return f"""
 import spynnaker8 as p
+
+__all_populations = {{}}
+__all_connections = {{}}
+__all_projections = {{}}
 
 p.setup({timestep})
 """

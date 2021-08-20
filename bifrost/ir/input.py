@@ -5,7 +5,7 @@ from typing import Dict, List, Set, Any
 
 @dataclass
 class InputSource(Layer):
-    shape: List[int, int]
+    shape: List[int]
 
 @dataclass
 class ImageDataset(InputSource):

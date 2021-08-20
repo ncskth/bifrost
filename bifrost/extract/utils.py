@@ -32,7 +32,14 @@ def get_param(obj, trans):
             o = o[indices]
 
     if len(trans) == 2:
-        return trans[1](o)
-    else:
-        return o
+        o = trans[1](o)
+
+    try:
+        mean_v = np.mean(o)
+        if np.isclose(mean_v, o[0]):
+            o = mean_v
+    except: # try to
+        pass
+
+    return o
 

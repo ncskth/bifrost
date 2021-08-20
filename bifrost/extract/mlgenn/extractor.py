@@ -68,3 +68,4 @@ def extract_all(mlgenn_network):
     #       should we leave this problem for a command line parameter?
     return {str(layer_idx): extract_layer(layer, layer_idx)
             for layer_idx, layer in enumerate(mlgenn_network.layers)}
+

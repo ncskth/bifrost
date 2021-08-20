@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from typing import TypeVar, Generic, Dict, Any
+
 
 @dataclass
 class Cell:
-    pass
+    parameters: Dict[str, Any]
 
 @dataclass
 class LIFCell(Cell):
