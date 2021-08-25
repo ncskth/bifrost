@@ -3,7 +3,7 @@ from .layer import Layer
 
 
 @dataclass
-class InputSource(Layer):
+class InputSource():
     pass
 
 

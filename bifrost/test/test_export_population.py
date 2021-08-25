@@ -1,58 +1,42 @@
+from bifrost.export.torch import TorchContext
+from typing import List
 import pytest
 
 from norse.torch import LIFParameters
 
-from bifrost.ir.layer import Conv2dLIFLayer, LIFLayer
-from bifrost.ir.input import SpiNNakerSPIFInput
+from bifrost.ir.layer import LIFAlphaLayer, Layer
+from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.parameter import ParameterContext
 
 from bifrost.export import population, pynn
 
-class MockContext(ParameterContext):
-    pass
+
+torch_context = TorchContext({"l": "0"})
+
 
 def test_input_to_pynn():
-    spif_layer = SpiNNakerSPIFInput("i", 1, 2)
-    variable = population.export_layer_spif(spif_layer)
+    spif_layer = InputLayer("i", 1, SpiNNakerSPIFInput(x=1, y=2))
+    variable = population.export_layer_input(spif_layer)
     assert variable == pynn.Statement(
-        """l_i = p.Population(None, p.external_devices.SPIFRetinaDevice(\
-base_key=0, width=1, height=2, sub_width=32, sub_height=16,\
-input_x_shift=16, input_y_shift=0))"""
-    )
-
-
-def test_cnn2d_to_pynn():
-    cnn_layer = Conv2dLIFLayer("c", 640, 480, 2)
-    c = MockContext()
-    cnn_pynn = population.export_layer_conv2d(cnn_layer, c)
-    lif_p = population.export_lif_neuron_type(cnn_layer.parameters)
-    assert cnn_pynn == pynn.Statement(
-        f"l_c = p.Population({640 * 480}, {lif_p.value}, structure=Grid2D({640 / 480}))",
-        ["from pyNN.space import Grid2D"],
+        "l_i_0 = p.Population(None,p.external_devices.SPIFRetinaDevice(base_key=0,width=1,height=2,sub_width=32,sub_height=16,input_x_shift=16,input_y_shift=0))"
     )
 
 
 def test_lif_to_pynn():
-    l = LIFLayer("l", 10)
-    c = MockContext()
-    lif_p = population.export_lif_neuron_type(l.parameters)
-    actual = population.export_layer_lif(l, c)
-    assert actual == pynn.Statement(f"l_l = p.Population(10, {lif_p.value})")
+    l = LIFAlphaLayer("l", channels=1, neurons=10)
+    lif_p = population.export_lif_neuron_type(l, torch_context)
+    actual = population.export_layer_neuron(l, torch_context)
+    assert actual == pynn.Statement(f"l_l_0 = p.Population(10, {lif_p.value})")
 
 
 def test_lif_neuron_to_pynn():
-    p = LIFParameters()
-    p_dict = population.export_dict(
-        {
-            "tau_m": 1 / float(p.tau_mem_inv),
-            "tau_syn_E": 1 / float(p.tau_syn_inv),
-            "tau_syn_I": 1 / float(p.tau_syn_inv),
-            "v_reset": float(p.v_reset),
-            "v_thresh": float(p.v_th),
-        }
-    )
-    s = population.export_lif_neuron_type(p)
-    assert s == pynn.Statement(f"p.IF_curr_exp({p_dict.value})", imports=p_dict.imports)
+    p = LIFAlphaLayer("l", 1, 10)
+    s = population.export_lif_neuron_type(p, torch_context)
+    expected = ""
+    for p in torch_context.lif_parameters:
+        expected = "_param_map['tau_mem_inv'](_params['0'][tau_mem_inv]),"
+    expected = "_param_map['tau_mem_inv'](_params['0'][tau_mem_inv]),_param_map['tau_syn_inv'](_params['0'][tau_syn_inv]),_param_map['tau_syn_inv'](_params['0'][tau_syn_inv]),_param_map['v_reset'](_params['0'][v_reset]),_param_map['v_th'](_params['0'][v_th])"
+    assert s == pynn.Statement(f"p.IF_curr_exp({expected})")
 
 
 def test_dict_to_pynn_parameters():

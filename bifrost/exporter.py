@@ -1,11 +1,11 @@
+from typing import TypeVar
 from bifrost.ir.parameter import ParameterContext
-from bifrost.export.pytorch import PytorchLightningContext
 from bifrost.export import connection, population, pynn
 from bifrost.ir.layer import Layer
 from bifrost.ir.network import Network
 
 
-def export_network(network: Network, context: ParameterContext) -> str:
+def export_network(network: Network, context: ParameterContext[str]) -> str:
     pynn_layers = [population.export_layer(l, context) for l in network.layers]
     connections = [
         connection.export_connection(c, context) for c in network.connections
@@ -14,8 +14,9 @@ def export_network(network: Network, context: ParameterContext) -> str:
     statements = []
     imports = set()
     for stmt in pynn_layers + connections:
-        statements.append(stmt.value)
-        imports = imports | set(stmt.imports)
+        if stmt is not None:
+            statements.append(stmt.value)
+            imports = imports | set(stmt.imports)
 
     # Header
     header = pynn.pynn_header(timestep=network.timestep) + "\n" + context.preamble

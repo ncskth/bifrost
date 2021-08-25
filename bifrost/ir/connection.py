@@ -2,7 +2,7 @@
 Internal representations (IR) for internal use
 """
 from dataclasses import dataclass
-import torch
+from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
 
@@ -24,18 +24,30 @@ class Connector:
 
 @dataclass
 class AllToAllConnector(Connector):
-    pass
+    ...
+
+
+@dataclass
+class MatrixConnector(Connector):
+    weights_key: str = "weights"
 
 
 @dataclass
 class ConvolutionConnector:
-    weights: torch.Tensor
-    padding: torch.Tensor = torch.tensor([1, 1])
+    weights_key: str = "weights"
+    padding_key: str = "padding"
+
+
+From = TypeVar("From", Layer, Layer)
+To = TypeVar("To", Layer, Layer)
 
 
 @dataclass
-class Connection:
-    pre: Layer
-    post: Layer
+class Connection(Generic[From, To]):
+    pre: From
+    post: To
     connector: Connector
     synapse: Synapse = StaticSynapse()
+
+    def variable(self, channel: int) -> str:
+        return f"c_{self.pre.name}_{self.post.name}_{channel}"

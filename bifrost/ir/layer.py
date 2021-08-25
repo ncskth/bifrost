@@ -1,26 +1,15 @@
-from bifrost.ir.parameter import ParameterContext
 from dataclasses import dataclass
-from norse.torch import LIFParameters
 
 
 @dataclass
 class Layer:
     name: str
-
-    @property
-    def variable(self):
-        return "l_" + self.name
-
-
-@dataclass
-class Conv2dLIFLayer(Layer):
-    width: int
-    height: int
     channels: int
-    parameters: LIFParameters = LIFParameters()
+
+    def variable(self, channel):
+        return f"l_{self.name}_{channel}"
 
 
 @dataclass
-class LIFLayer(Layer):
+class LIFAlphaLayer(Layer):
     neurons: int
-    parameters: LIFParameters = LIFParameters()

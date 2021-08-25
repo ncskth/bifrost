@@ -1,6 +1,7 @@
 from abc import abstractmethod, abstractproperty
-from dataclasses import dataclass
-from typing import TypeVar, Generic
+from typing import Dict, List, TypeVar, Generic
+
+from bifrost.ir.layer import Layer
 
 Output = TypeVar("Output")
 
@@ -11,9 +12,17 @@ class ParameterContext(Generic[Output]):
         ...
 
     @abstractmethod
-    def weights(self, layer: str) -> Output:
+    def linear_weights(self, layer: str, channel: int) -> Output:
         ...
 
     @abstractmethod
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
+        ...
+
+    @abstractmethod
+    def neuron_parameter(self, layer: str, parameter: str) -> Output:
+        ...
+
+    @abstractmethod
+    def parameter_names(self, layer: Layer) -> List[str]:
         ...
