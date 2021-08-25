@@ -1,5 +1,6 @@
 from bifrost import ir as IR
-from bifrost.ir import (NeuronLayer, Cell)
+from bifrost.ir import (NeuronLayer, Cell, Connection)
+from typing import List
 from copy import copy
 import numpy as np
 
@@ -44,11 +45,13 @@ def to_neuron_layer(index, network_dictionary):
            f'Size and Shape are not compatible {size} != product({shape})'
     synapse = to_synapse(ldict)
     cell = to_cell(ldict['params']['cell'])
-    return NeuronLayer(index=index, key=lkey,
-                       name=ldict['name'],
-                       size=size,
-                       cell=cell,
-                       synapse=synapse,
-                       n_channels=channs,
-                       shape=shape,
-                       )
+    return NeuronLayer(index=index, key=lkey, name=ldict['name'],
+                       size=size, cell=cell, synapse=synapse,
+                       n_channels=channs, shape=shape,)
+
+def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
+    ldict = copy(network_dictionary[post.key])
+    conn = get_ir_class(ldict['connector_type'])
+    return Connection(pre, post, conn)
+
+

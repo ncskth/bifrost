@@ -1,5 +1,5 @@
 import numpy as np
-from bifrost.extract.utils import (size_from_shape, layer_attr)
+from bifrost.extract.utils import (size_from_shape)
 
 cells = {
     'IFNeurons': {
@@ -61,6 +61,13 @@ layers = {
             'weights': ('upstream_synapses[0].weights', np.copy),
         },
     }
+}
+
+connectors = {
+    'AvePool2DConv2DSynapses': 'ConvolutionConnector',
+    'Conv2DSynapses': 'ConvolutionConnector',
+    'AvePool2DDenseSynapses': 'DenseConnector',
+    'DenseSynapses': 'DenseConnector',
 }
 
 input = {

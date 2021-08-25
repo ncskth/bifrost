@@ -9,7 +9,7 @@ from .pynn import Statement
 
 
 
-def export_dict(d: Dict[Any, Any], n_post_spaces=0) -> Statement:
+def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement:
     def _export_dict_key(key: Any) -> str:
         if not isinstance(key, str):
             raise ValueError("Parameter key must be a string", key)
@@ -24,7 +24,7 @@ def export_dict(d: Dict[Any, Any], n_post_spaces=0) -> Statement:
     pynn_dict = [f"{_export_dict_key(key)}={_export_dict_value(value)}"
                  for key, value in d.items()]
     spaces = "".join([" "] * n_post_spaces)
-    return Statement((f",\n{spaces}").join(pynn_dict), [])
+    return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
 
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
@@ -36,13 +36,20 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
         raise ValueError("Unknown layer type", layer)
 
 
-def export_neuron_layer(layer: NeuronLayer, context: ParameterContext[str]) -> Statement:
-    neuron = export_neuron_type(layer, context)
+def export_neuron_layer(layer: NeuronLayer, context: ParameterContext[str],
+                        param_join_str=", ", pop_join_str=",\n") -> Statement:
+    neuron = export_neuron_type(layer, context, join_str=", ", spaces=0)
     structure = export_structure(layer)
+    param_template = param_join_str.join([
+            f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
+            f"label='{layer.variable}_{{}}'"])
+    list_of_pops = [
+        (f"p.Population({param_template})").format(channel_index)
+        for channel_index in range(layer.n_channels)
+    ]
+    lop = pop_join_str.join(list_of_pops)
     return Statement(
-        f"{layer.variable} = p.Population({layer.size}, \n"
-        f"  {neuron.value},\n"
-        f"  structure={structure.value})",
+        f"{layer.variable} = [{lop}]",
         imports=neuron.imports+structure.imports,
     )
 
@@ -55,9 +62,10 @@ input_x_shift={layer.x_shift}, input_y_shift={layer.y_shift}))"""
     )
 
 
-def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str]) -> Statement:
+def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
+                       join_str:str = ",\n", spaces:int = 0) -> Statement:
     pynn_parameter_statement = export_dict(layer.cell.parameters,
-                                           n_post_spaces=4)
+                                           join_str, spaces)
     cell_type = get_pynn_cell_type(layer.cell, layer.synapse)
     return Statement(
         f"p.{cell_type}({pynn_parameter_statement.value})",

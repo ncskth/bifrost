@@ -13,7 +13,7 @@ class Layer:
 
     @property
     def variable(self):
-        return f"layer_{self.name}_{self.index}"
+        return f"layer_{self.name}"
 
 
 @dataclass

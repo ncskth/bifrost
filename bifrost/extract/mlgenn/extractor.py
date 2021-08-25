@@ -1,6 +1,7 @@
 from bifrost.extract.mlgenn.translations import (
     cells as cell_translations,
     layers as layer_translations,
+    connectors as connector_translations,
     CELL_TYPE_PARAM,
     SYNAPSE_TYPE_PARAM,
     LAYER_TYPE_PARAM,
@@ -56,12 +57,16 @@ def extract_layer(layer, index):
     layer_params, layer_type = extract_layer_params(
                                     layer, layer_translations,
                                     cell_translations)
+
+    conn_type = connector_translations.get(layer_type, None)
+
     return {
         'pre': index - 1,
         'post': index,
         'name': layer.name,
         'type': layer_type,
         'params': layer_params,
+        'connector_type': conn_type,
     }
 
 def extract_all(mlgenn_network):
