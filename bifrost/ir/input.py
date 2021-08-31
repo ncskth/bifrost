@@ -1,10 +1,20 @@
 from dataclasses import dataclass
-from .layer import Layer
+from bifrost.ir.layer import Layer
+from typing import Dict, List, Set, Any
 
 
 @dataclass
-class InputSource():
-    pass
+class InputSource(Layer):
+    shape: List[int]
+
+@dataclass
+class ImageDataset(InputSource):
+    load_command: str
+    num_samples: int
+
+@dataclass
+class PoissonImageDataset(ImageDataset):
+    intensity_to_rate: float
 
 
 @dataclass

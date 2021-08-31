@@ -13,6 +13,7 @@ from bifrost.export.torch import TorchContext
 from bifrost.ir.network import Network
 from bifrost.parse.parse_torch import torch_to_network, torch_to_context
 
+# todo: is this more like a test?
 
 def export(model, text_shape, writer):
     shape = make_tuple(text_shape)

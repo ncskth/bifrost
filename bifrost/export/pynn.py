@@ -5,6 +5,8 @@ from typing import List, Union
 @dataclass
 class Statement:
     value: str
+    # todo: this should be a Set so we don't get repeated imports
+    #       or deal with these repeated imports later
     imports: List[str] = ()
 
     def __init__(self, value: Union[str, List[str]] = "", imports: List[str] = ()):
