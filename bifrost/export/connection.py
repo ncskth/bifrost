@@ -1,34 +1,21 @@
 from typing import Optional, Tuple
-
-from torch._C import Value
 from bifrost.ir.parameter import ParameterContext
-from bifrost.ir.layer import LIFAlphaLayer
-import torch
-
+from bifrost.ir.layer import NeuronLayer
 from bifrost.ir.connection import *
-from .pynn import Statement
-
-
-@dataclass
-class ConnectionStatement(Statement):
-    configuration: Optional[str] = ""
-
-    def __add__(self, other):
-        return ConnectionStatement(
-            self.value + "\n" + other.value,
-            imports=self.imports + other.imports,
-            configuration=self.configuration + "\n" + other.configuration,
-        )
+from bifrost.export.statement import Statement, ConnectionStatement
 
 
 def export_connection(
-    connection: Connection, context: ParameterContext[str]
-) -> Statement:
+    connection: Connection, context: ParameterContext[str]) -> Statement:
+
+    # Convolution and Dense are a sub-class of Static
     if not isinstance(connection.synapse, StaticSynapse):
         raise ValueError("Unknown Synapse", connection.synapse)
-    assert (
-        connection.pre.channels == connection.post.channels
-    ), f"LIF -> LIF connection channels not equal! {connection.pre.channels} != {connection.post.channels}"
+
+    # todo: this is not true, channel numbers are not necesarily the same
+    # assert (
+    #     connection.pre.channels == connection.post.channels
+    # ), f"LIF -> LIF connection channels not equal! {connection.pre.channels} != {connection.post.channels}"
 
     projections = []
     for channel in range(connection.pre.channels):

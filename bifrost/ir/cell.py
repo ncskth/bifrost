@@ -4,14 +4,16 @@ from typing import TypeVar, Generic, Dict, Any
 
 @dataclass
 class Cell:
-    parameters: Dict[str, Any]
+    # parameter_names: List[str] = ()
+    # function_name = ""
+    pass
 
 @dataclass
 class LIFCell(Cell):
     pass
 
 @dataclass
-class LICell(Cell):
+class LICell(LIFCell):
     pass
 
 @dataclass

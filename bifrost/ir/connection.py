@@ -6,11 +6,13 @@ from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
 
+
+class Connector:
+    pass
+
 @dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
-class Connector:
-    pass
 
 @dataclass
 class MatrixConnector(Connector):
@@ -26,10 +28,14 @@ class ConvolutionConnector(Connector):
     padding_key: str = "padding"
 
 
+From = TypeVar("From", Layer, Layer)
+To = TypeVar("To", Layer, Layer)
+
+
 @dataclass
-class Connection:
-    pre: Layer
-    post: Layer
+class Connection(Generic[From, To]):
+    pre: From
+    post: To
     connector: Connector
 
     def variable(self, channel: int) -> str:

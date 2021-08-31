@@ -1,7 +1,7 @@
 from abc import abstractmethod, abstractproperty
 from typing import Dict, List, TypeVar, Generic
 
-from bifrost.ir.layer import Layer
+from bifrost.ir.cell import Cell
 
 Output = TypeVar("Output")
 
@@ -24,5 +24,5 @@ class ParameterContext(Generic[Output]):
         ...
 
     @abstractmethod
-    def parameter_names(self, layer: Layer) -> List[str]:
+    def parameter_names(self, layer: Cell) -> List[str]:
         ...

@@ -4,7 +4,7 @@ from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.cell import (LIFCell, LICell, IFCell)
-from .pynn import Statement
+from bifrost.export.statement import Statement
 
 
 def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement:
@@ -24,6 +24,12 @@ def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement
     spaces = "".join([" "] * n_post_spaces)
     return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
 
+def export_cell_params(layer: Layer, context: ParameterContext[str]) -> Statement:
+    # todo: take 'locations/addresses' from context and express as a function
+    #       which returns a dictionary so that once it's called, we can use the
+    #       ** operator to pass key-value pairs as parameters to cell class
+    #       constructor
+    return Statement()
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
@@ -73,8 +79,7 @@ input_x_shift={spif_layer.x_shift},input_y_shift={spif_layer.y_shift}))"""
 
 def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 0) -> Statement:
-    pynn_parameter_statement = export_dict(layer.cell.parameters,
-                                           join_str, spaces)
+    pynn_parameter_statement = export_cell_params(layer.cell, join_str, spaces)
     cell_type = get_pynn_cell_type(layer.cell, layer.synapse)
     return Statement(
         f"p.{cell_type}({pynn_parameter_statement.value})",
@@ -86,6 +91,7 @@ def export_structure(layer):
     return Statement(f"Grid2D({ratio})",
                      imports=['from pyNN.space import Grid2D'])
 
+# todo: this is PyNN, I guess we should move it somewhere else
 def get_pynn_cell_type(cell, synapse):
     if isinstance(cell, (LICell, LIFCell)):
         cell_type = 'IF'  # in PyNN this is missing the L for some #$%@ reason

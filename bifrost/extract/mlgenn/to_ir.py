@@ -24,7 +24,8 @@ def to_cell(cell_params):
     cell_dict = copy(cell_params)
     cell_name = cell_dict.pop('target')
     cell_class = get_ir_class(cell_name)
-    return cell_class(cell_dict)
+    # return cell_class(cell_dict)
+    return cell_class()
 
 def to_neuron_layer(index, network_dictionary):
     keys = sorted(network_dictionary.keys())
@@ -45,9 +46,9 @@ def to_neuron_layer(index, network_dictionary):
            f'Size and Shape are not compatible {size} != product({shape})'
     synapse = to_synapse(ldict)
     cell = to_cell(ldict['params']['cell'])
-    return NeuronLayer(index=index, key=lkey, name=ldict['name'],
-                       size=size, cell=cell, synapse=synapse,
-                       n_channels=channs, shape=shape,)
+    return NeuronLayer(name=ldict['name'], size=size,
+                       cell=cell, synapse=synapse, channels=channs,
+                       index=index, key=lkey, shape=shape,)
 
 def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
     ldict = copy(network_dictionary[post.key])

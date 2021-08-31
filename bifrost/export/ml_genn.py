@@ -1,5 +1,4 @@
-
-from bifrost.export.pynn import Statement
+from bifrost.export.statement import Statement
 from typing import Any, Dict
 from bifrost.ir.parameter import ParameterContext, Output
 

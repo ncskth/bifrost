@@ -4,7 +4,7 @@ from bifrost.ir.input import InputLayer
 from bifrost.ir.parameter import ParameterContext
 from typing import Tuple
 from bifrost.ir.connection import MatrixConnector, Connection
-from bifrost.ir.layer import LIFAlphaLayer
+from bifrost.ir.layer import NeuronLayer
 
 import torch
 
@@ -20,7 +20,7 @@ def export(model, text_shape, writer):
     data = torch.zeros(shape)
     # TODO: Parse graph
     # graph = model_to_graph(model, data)
-    layers = [LIFAlphaLayer("l1", 1, 1), LIFAlphaLayer("l2", 1, 1)]
+    layers = [NeuronLayer("l1", 1, 1), NeuronLayer("l2", 1, 1)]
     connections = [Connection("l1", "l2", MatrixConnector())]
 
     context = TorchContext({})

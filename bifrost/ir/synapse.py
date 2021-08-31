@@ -1,14 +1,11 @@
 from dataclasses import dataclass
+from typing import Literal
 
 
 @dataclass
 class Synapse:
-    '''
-    synapse_type: ['current', 'conductance']
-    synapse_shape: ['exponential', 'alpha', 'delta']
-    '''
-    synapse_type: str
-    synapse_shape: str
+    synapse_type: Literal['current', 'conductance'] = 'current'
+    synapse_shape: Literal['exponential', 'alpha', 'delta'] = 'exponential'
 
 @dataclass
 class StaticSynapse(Synapse):
