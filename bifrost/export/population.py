@@ -7,7 +7,6 @@ from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from .pynn import Statement
 
 
-
 def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement:
     def _export_dict_key(key: Any) -> str:
         if not isinstance(key, str):

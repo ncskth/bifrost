@@ -1,3 +1,4 @@
+from bifrost.ir.parameter import ParameterContext
 from dataclasses import dataclass
 from bifrost.ir.cell import Cell
 from bifrost.ir.synapse import Synapse

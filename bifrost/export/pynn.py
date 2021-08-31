@@ -8,6 +8,7 @@ class Statement:
     # todo: this should be a Set so we don't get repeated imports
     #       or deal with these repeated imports later
     imports: List[str] = ()
+    preamble: str = ""
 
     def __init__(self, value: Union[str, List[str]] = "", imports: List[str] = ()):
         if isinstance(value, list):
@@ -33,6 +34,10 @@ class Statement:
 def pynn_header(timestep=1.0):
     return f"""
 import spynnaker8 as p
+
+__all_populations = {{}}
+__all_connections = {{}}
+__all_projections = {{}}
 
 p.setup({timestep})
 """

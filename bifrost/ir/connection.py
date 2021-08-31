@@ -6,24 +6,10 @@ from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
 
-
-@dataclass
-class Synapse:
-    pass
-
-
-@dataclass
-class StaticSynapse(Synapse):
-    pass
-
-
-@dataclass
-class Connector:
-    pass
-
 @dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
+class Connector:
     pass
 
 @dataclass
