@@ -25,7 +25,7 @@ class Statement:
         #        being **tuples** which makes adding tricky
         if isinstance(l1, tuple):
             return l0
-        elif isinstance(self.imports, tuple):
+        elif isinstance(l0, tuple):
             return l1
         else:
             return l0 + l1

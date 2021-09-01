@@ -2,7 +2,7 @@ from bifrost.export.torch import TorchContext
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
 from bifrost.ir.connection import AllToAllConnector, Connection, MatrixConnector
-from bifrost.ir.layer import LIFAlphaLayer, Layer
+from bifrost.ir.layer import NeuronLayer, Layer
 from typing import Callable, List, Optional, Tuple
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
@@ -71,6 +71,6 @@ def module_to_layer(
     module: torch.nn.Module, index: int, input_channels: int, input_neurons: int
 ) -> Layer:
     if isinstance(module, norse.LIFCell):
-        return LIFAlphaLayer(str(index), input_channels, input_neurons)
+        return NeuronLayer(str(index), input_channels, input_neurons)
     else:
         raise ValueError("Unknown torch module layer", module)

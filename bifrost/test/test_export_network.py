@@ -1,5 +1,5 @@
 from bifrost.ir.parameter import ParameterContext
-from bifrost.ir.layer import LIFAlphaLayer
+from bifrost.ir.layer import NeuronLayer
 from bifrost.ir.network import Network
 from bifrost.export.population import export_layer_neuron
 from bifrost.exporter import export_network
@@ -32,7 +32,7 @@ def test_export_neurons_per_core():
 
 
 def test_export_single():
-    l = LIFAlphaLayer("l", 1, 10)
+    l = NeuronLayer("l", 1, 10)
     net = Network([l], set(), 100.1)
     out = export_network(net, torch_context)
     lif = export_layer_neuron(l, torch_context)

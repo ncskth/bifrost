@@ -1,15 +1,18 @@
 from typing import Optional, Tuple
 from bifrost.ir.parameter import ParameterContext
-from bifrost.ir.layer import NeuronLayer
-from bifrost.ir.connection import *
+from bifrost.ir.layer import NeuronLayer, Layer
+from bifrost.ir.connection import (
+    Connection, ConvolutionConnector, MatrixConnector, DenseConnector)
 from bifrost.export.statement import Statement, ConnectionStatement
-
+from bifrost.ir.synapse import (
+    StaticSynapse, ConvolutionSynapse, DenseSynapse)
+from bifrost.export.pynn import SIM_NAME
 
 def export_connection(
     connection: Connection, context: ParameterContext[str]) -> Statement:
 
     # Convolution and Dense are a sub-class of Static
-    if not isinstance(connection.synapse, StaticSynapse):
+    if not isinstance(connection.post.synapse, StaticSynapse):
         raise ValueError("Unknown Synapse", connection.synapse)
 
     # todo: this is not true, channel numbers are not necesarily the same
@@ -18,27 +21,91 @@ def export_connection(
     # ), f"LIF -> LIF connection channels not equal! {connection.pre.channels} != {connection.post.channels}"
 
     projections = []
-    for channel in range(connection.pre.channels):
-        connector = export_connector(connection, channel, context)
-        projection = f"{connection.variable(channel)} = p.Projection({connection.pre.variable(channel)}, {connection.post.variable(channel)}, {connector.value}, p.StaticSynapse())"
-        projections.append(projection + f"\n{connector.configuration}")
+    for ch_in in range(connection.pre.channels):
+        for ch_out in range(connection.post.channels):
+            var = connection.variable(f"{ch_in}_{ch_out}")
+            connector = export_connector(connection, ch_in, ch_out, context)
+            synapse = export_synapse(connection)
+            projection = f"{var} = {SIM_NAME}.Projection(" \
+                         f"{connection.pre.variable(ch_in)}, " \
+                         f"{connection.post.variable(ch_out)}, \n"\
+                         f"    {connector.value}, \n" \
+                         f"    {synapse.value})"
+
+            projections.append(projection + f"\n{connector.configuration}")
 
     return Statement(
         value="\n".join(projections),
         imports=connector.imports,
     )
 
-
-def export_connector(
-    connection: Connection[Layer, Layer], channel: int, context: ParameterContext[str]
-):
-    if isinstance(connection.connector, MatrixConnector):
-        return ConnectionStatement(
-            f"p.AllToAllConnector()",
-            configuration=f"{connection.variable(channel)}.set(weight={context.weights(connection.connector.weights_key, channel)})",
-        )
+def export_synapse(connection: Connection[Layer, Layer]) -> Statement:
+    synapse = connection.post.synapse
+    if isinstance(synapse, ConvolutionSynapse):
+        return Statement(f"{SIM_NAME}.Convolution()")
+    elif isinstance(synapse, DenseSynapse):
+        return Statement(f"{SIM_NAME}.Dense()")
+    elif isinstance(synapse, StaticSynapse):
+        return Statement(f"{SIM_NAME}.StaticSynapse()")
     else:
-        raise ValueError("Unknown connector: ", connection.connector)
+        raise ValueError(f"Unknown Synapse type: {synapse}")
+
+def export_connector(connection: Connection[Layer, Layer],
+                     channel_in: int, channel_out: int,
+                     context: ParameterContext[str],
+                     spaces: int = 8) -> Statement:
+    connector = connection.connector
+
+    if isinstance(connector, MatrixConnector):
+        return export_all_to_all(connection, channel_in, channel_out,
+                                 context, spaces)
+    elif isinstance(connector, ConvolutionConnector):
+        return export_conv(connection, channel_in, channel_out, context, spaces)
+    elif isinstance(connector, DenseConnector):
+        return export_dense(connection, channel_in, channel_out, context, spaces)
+    else:
+        raise ValueError(f"Unknown connector: {connector}")
+
+def export_all_to_all(connection: Connection[Layer, Layer],
+                      channel_in: int, channel_out: int,
+                      context: ParameterContext[str]) -> Statement:
+    weights = context.weights(connection.connector.weights_key, channel_in, channel_out)
+    config = f"{connection.variable(channel)}.set(weight={weights})"
+    return ConnectionStatement(
+        f"{SIM_NAME}.AllToAllConnector()",
+        configuration=config,
+    )
+
+def export_conv(connection: Connection[Layer, Layer],
+                channel_in: int, channel_out: int,
+                context: ParameterContext[str],
+                spaces: int = 8) -> Statement:
+    sp = " " * spaces
+    weights = context.conv2d_weights(
+                str(connection.post), channel_in, channel_out)
+    strides = context.conv2d_strides(str(connection.post))
+    pool_shape, pool_stride = context.conv2d_pooling(str(connection.post))
+    # todo: padding here needs to be somewhat decoded but I'm not sure how to
+    return ConnectionStatement(
+        f"{SIM_NAME}.ConvolutionConnector({weights}, \n"
+        f"{sp}strides={strides}, \n"
+        f"{sp}pool_shape={pool_shape}, \n"
+        f"{sp}pool_stride={pool_stride})",
+    )
+
+def export_dense(connection: Connection[Layer, Layer],
+                 channel_in: int, channel_out: int,
+                 context: ParameterContext[str],
+                 spaces: int = 8) -> Statement:
+    sp = " " * spaces
+    weights = context.linear_weights(str(connection.post), channel_in)
+    pool_shape, pool_stride = context.conv2d_pooling(str(connection.post))
+    # todo: padding here needs to be somewhat decoded but I'm not sure how to
+    return ConnectionStatement(
+        f"{SIM_NAME}.DenseConnector({weights}, \n"
+        f"{sp}pool_shape={pool_shape}, \n"
+        f"{sp}pool_stride={pool_stride})",
+    )
 
 
 # def export_connector_conv_to_x(

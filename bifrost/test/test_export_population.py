@@ -4,11 +4,11 @@ import pytest
 
 from norse.torch import LIFParameters
 
-from bifrost.ir.layer import LIFAlphaLayer, Layer
+from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.parameter import ParameterContext
 
-from bifrost.export import population, pynn
+from bifrost.export import population, statement
 
 
 torch_context = TorchContext({"l": "0"})
@@ -17,20 +17,21 @@ torch_context = TorchContext({"l": "0"})
 def test_input_to_pynn():
     spif_layer = InputLayer("i", 1, SpiNNakerSPIFInput(x=1, y=2))
     variable = population.export_layer_input(spif_layer)
-    assert variable == pynn.Statement(
+    stm = statement.Statement(
         "l_i_0 = p.Population(None,p.external_devices.SPIFRetinaDevice(base_key=0,width=1,height=2,sub_width=32,sub_height=16,input_x_shift=16,input_y_shift=0))"
     )
+    assert variable == stm
 
 
 def test_lif_to_pynn():
-    l = LIFAlphaLayer("l", channels=1, neurons=10)
+    l = NeuronLayer("l", channels=1, neurons=10)
     lif_p = population.export_lif_neuron_type(l, torch_context)
     actual = population.export_layer_neuron(l, torch_context)
     assert actual == pynn.Statement(f"l_l_0 = p.Population(10, {lif_p.value})")
 
 
 def test_lif_neuron_to_pynn():
-    p = LIFAlphaLayer("l", 1, 10)
+    p = NeuronLayer("l", 1, 10)
     s = population.export_lif_neuron_type(p, torch_context)
     expected = ""
     for p in torch_context.lif_parameters:

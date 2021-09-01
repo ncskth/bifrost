@@ -31,11 +31,23 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map
 
-    def weights(self, layer: str) -> Output:
-        raise NotImplementedError()
+    def linear_weights(self, layer: str, channel_in: int) -> Output:
+        lyr = self.layer_map[layer]
+        return f'_params["{lyr}"]["params"]["weights"][{channel_in}, :, :]'
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
-        raise NotImplementedError()
+        lyr = self.layer_map[layer]
+        return f'_params["{lyr}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]'
+
+    def conv2d_strides(self, layer: str) -> Output:
+        lyr = self.layer_map[layer]
+        return f'_params["{lyr}"]["params"]["strides"]'
+
+    def conv2d_pooling(self, layer: str) -> Output:
+        lyr = self.layer_map[layer]
+        area = f'_params["{lyr}"]["params"].get("pool_shape", None)'
+        stride = f'_params["{lyr}"]["params"].get("pool_stride", None)'
+        return area, stride
 
     def cell_type(self, layer: str) -> Output:
         return f"_params['{layer}']['params']['cell']['target']"
