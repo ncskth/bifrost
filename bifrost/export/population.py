@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
@@ -7,7 +7,7 @@ from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from bifrost.export.statement import Statement
 
 
-def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement:
+def export_dict(d: Dict[Any, Any], join_str=",\n", n_spaces=0) -> Statement:
     def _export_dict_key(key: Any) -> str:
         if not isinstance(key, str):
             raise ValueError("Parameter key must be a string", key)
@@ -21,15 +21,44 @@ def export_dict(d: Dict[Any, Any], join_str=",\n", n_post_spaces=0) -> Statement
 
     pynn_dict = [f"{_export_dict_key(key)}={_export_dict_value(value)}"
                  for key, value in d.items()]
-    spaces = "".join([" "] * n_post_spaces)
+    spaces = " " * n_spaces
     return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
 
-def export_cell_params(layer: Layer, context: ParameterContext[str]) -> Statement:
+def export_list(var: str, l: List[str], join_str=", ", n_spaces=0):
+    spaces = " " * n_spaces
+    lst = (f"{join_str}{spaces}").join([f"\"{v}\"" for v in l])
+
+    return f"{var} = [{lst}]"
+
+def export_cell_params(layer: Layer, context: ParameterContext[str],
+                       join_str:str = ",\n", spaces:int = 8) -> Statement:
     # todo: take 'locations/addresses' from context and express as a function
     #       which returns a dictionary so that once it's called, we can use the
     #       ** operator to pass key-value pairs as parameters to cell class
     #       constructor
-    return Statement()
+    cell_name = layer.cell.__class__.__name__
+    sp = " " * spaces
+    layer_name = str(layer)
+    func_name = f"__map_func_{layer_name}"
+
+    list_name = f"__parameter_names"
+    dict_name = "__d"
+    fcall = context.neuron_parameter(layer_name, 'p')
+    names = export_list(list_name, context.parameter_names(layer.cell))
+    params = []
+
+    f = f"""
+def {func_name}():
+    {names}
+    {dict_name} = dict()
+    for p in {list_name}:
+        k, v = {fcall}
+        {dict_name}[k] = v
+    return {dict_name}
+    
+    """
+    print(f)
+    return Statement(f"**({func_name}())", preambles=[f])
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
@@ -58,7 +87,9 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
         par = param_template.format(var)
         statement += Statement(f"{var} = p.Population({par})",
                                imports=neuron.imports,)
-    statement.imports += structure.imports
+
+    if isinstance(statement.imports, tuple):
+        statement.imports = structure.imports
 
     return statement
 
@@ -79,7 +110,7 @@ input_x_shift={spif_layer.x_shift},input_y_shift={spif_layer.y_shift}))"""
 
 def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 0) -> Statement:
-    pynn_parameter_statement = export_cell_params(layer.cell, join_str, spaces)
+    pynn_parameter_statement = export_cell_params(layer, ctx, join_str, spaces)
     cell_type = get_pynn_cell_type(layer.cell, layer.synapse)
     return Statement(
         f"p.{cell_type}({pynn_parameter_statement.value})",

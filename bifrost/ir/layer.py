@@ -13,6 +13,12 @@ class Layer:
     def variable(self, channel):
         return f"l_{self.name}_{channel}"
 
+    def __repr__(self):
+        return f"l_{self.name}_{self.size}_{self.channels}"
+
+    def __str__(self):
+        return self.__repr__()
+
 
 @dataclass
 class NeuronLayer(Layer):
@@ -21,3 +27,9 @@ class NeuronLayer(Layer):
     index: int = 0
     key: str = ""
     shape: List[int] = (1, 1)
+
+    def __repr__(self):
+        return f"l_{self.name}_{self.size}_{self.channels}"
+
+    def __str__(self):
+        return self.__repr__()

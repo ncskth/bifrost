@@ -1,6 +1,7 @@
 from bifrost.export.statement import Statement
-from typing import Any, Dict
+from typing import Any, Dict, List
 from bifrost.ir.parameter import ParameterContext, Output
+from bifrost.ir.cell import Cell, IFCell
 
 
 class MLGeNNContext(ParameterContext[str]):
@@ -17,9 +18,15 @@ def to_dict(np_file):
             d[k] = np_file[k]
     return d 
 
-__net_params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
+_params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
+_param_map = {
+    "v_rest": (lambda v: "v_rest", v),
+    "v_thresh": (lambda v: "v_thresh", v),
+}
     """
+
+    if_parameters = ['v_thresh', 'v_rest']
 
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map
@@ -31,11 +38,17 @@ __net_params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
         raise NotImplementedError()
 
     def cell_type(self, layer: str) -> Output:
-        return f"__net_params['{layer}']['params']['cell']['target']"
+        return f"_params['{layer}']['params']['cell']['target']"
 
     def cell_parameter_dict(self, layer: str) -> Dict:
-        d = {
+        return {}
 
-        }
+    def neuron_parameter(self, layer: str, parameter_name: str) -> str:
+        return f'_param_map[{parameter_name}]'\
+               f'(_params["{self.layer_map[layer]}"]["params"]["cell"][{parameter_name}])'
 
-        return d
+    def parameter_names(self, cell: Cell) -> List[str]:
+        if isinstance(cell, IFCell):
+            return self.if_parameters
+        else:
+            raise ValueError("Unknown neuron type ", cell)

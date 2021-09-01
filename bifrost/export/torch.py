@@ -15,11 +15,11 @@ _checkpoint = torch.load(sys.argv[1])
 _params = _checkpoint['state_dict']
 
 _param_map = {
-    "tau_mem_inv": (lambda v: f"tau_m=1/{v}"),
-    "tau_syn_inv": (lambda v: f"tau_syn_E=1/{v}"),
-    "tau_syn_inv": (lambda v: f"tau_syn_I=1/{v}"),
-    "v_reset": (lambda v: f"v_reset{v}"),
-    "v_th": (lambda v: f"v_thresh={v}"),
+    "tau_mem_inv": (lambda v: "tau_m", 1.0/v),
+    "tau_syn_inv": (lambda v: "tau_syn_E", 1.0/v),
+    "tau_syn_inv": (lambda v: "tau_syn_E", 1.0/v),
+    "v_reset": (lambda v: "v_reset", v),
+    "v_th": (lambda v: "v_thresh", v),
 }
 """
 
@@ -40,9 +40,13 @@ _param_map = {
     def conv2d_weights(self, key: str, channel_in: int, channel_out: int) -> str:
         raise NotImplementedError()
 
-    def neuron_parameter(self, layer_name: str, parameter_name: str) -> str:
+    def neuron_parameter_base(self, layer:str) -> str:
+        return f"_param_map['{{}}']"\
+               f"(_params['{self.layer_map[layer]}'][{{}}])"
+
+    def neuron_parameter(self, layer: str, parameter_name: str) -> str:
         return f"_param_map['{parameter_name}']"\
-               f"(_params['{self.layer_map[layer_name]}'][{parameter_name}])"
+               f"(_params['{self.layer_map[layer]}'][{parameter_name}])"
 
     def parameter_names(self, cell: Cell) -> List[str]:
         if isinstance(cell, LIFCell):

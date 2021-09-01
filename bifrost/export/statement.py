@@ -10,12 +10,15 @@ class Statement:
     imports: List[str] = ()
     preambles: List[str] = ()
 
-    def __init__(self, value: Union[str, List[str]] = "", imports: List[str] = ()):
+    def __init__(self, value: Union[str, List[str]] = "", imports: List[str] = (),
+                 preambles: List[str] = ()):
         if isinstance(value, list):
             self.value = "\n".join(value)
         else:
             self.value = value
+
         self.imports = imports
+        self.preambles = preambles
 
     def __add_lists(self, l0, l1):
         #  NOTE: helper to deal with the default value of imports and preambles
