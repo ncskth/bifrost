@@ -8,11 +8,15 @@ Output = TypeVar("Output")
 
 class ParameterContext(Generic[Output]):
     @abstractproperty
+    def imports(self) -> List[Output]:
+        ...
+
+    @abstractproperty
     def preamble(self) -> Output:
         ...
 
     @abstractmethod
-    def linear_weights(self, layer: str, channel: int) -> Output:
+    def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
         ...
 
     @abstractmethod

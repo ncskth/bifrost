@@ -12,7 +12,7 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     ]
 
     statements = []
-    imports = set(pynn.pynn_imports)
+    imports = set(pynn.pynn_imports + context.imports)
     preambles = set()
     for stmt in pynn_layers + connections:
         if stmt is not None:

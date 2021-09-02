@@ -5,10 +5,8 @@ from bifrost.ir.cell import Cell, IFCell
 
 
 class MLGeNNContext(ParameterContext[str]):
-
+    imports = ["import numpy as np", "import sys"]
     preamble = """
-import numpy as np
-import sys
 def to_dict(np_file):
     d = {}
     for k in np_file.keys():
@@ -31,9 +29,9 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map
 
-    def linear_weights(self, layer: str, channel_in: int) -> Output:
+    def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
         lyr = self.layer_map[layer]
-        return f'_params["{lyr}"]["params"]["weights"][{channel_in}, :, :]'
+        return f'_params["{lyr}"]["params"]["weights"][{channel_in}, {channel_out}]'
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
         lyr = self.layer_map[layer]

@@ -4,17 +4,22 @@ from bifrost.ir.synapse import Synapse, StaticSynapse
 from bifrost.ir.layer import Layer
 
 
-class OutputSource:
+class OutputSink:
     pass
+
+@dataclass
+class EthernetOutput(OutputSink):
+    host: Optional[str] = "localhost"
+    post: Optional[int] = 3333
 
 
 @dataclass
 class OutputLayer(Layer):
-    sink: OutputSource
+    sink: OutputSink
     synapse: Synapse = StaticSynapse()
 
+    def __repr__(self):
+        return super().__repr__()
 
-@dataclass
-class EthernetOutput(OutputSource):
-    host: Optional[str] = "localhost"
-    post: Optional[int] = 3333
+    def __str__(self):
+        return super().__str__()

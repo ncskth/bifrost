@@ -88,6 +88,9 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
                                imports=neuron.imports,
                                preambles=neuron.preambles)
 
+    # just add a break to separate populations for each layer
+    statement += Statement("")
+
     if isinstance(statement.imports, tuple):
         statement.imports = structure.imports
     else:

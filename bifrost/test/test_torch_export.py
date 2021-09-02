@@ -1,4 +1,4 @@
-from bifrost.ir.output import EthernetOutput, OutputLayer, OutputSource
+from bifrost.ir.output import EthernetOutput, OutputLayer, OutputSink
 from bifrost.ir.input import InputLayer, InputSource
 from bifrost.exporter import export_network
 from bifrost.main import parse_torch

@@ -29,7 +29,7 @@ class NeuronLayer(Layer):
     shape: List[int] = (1, 1)
 
     def __repr__(self):
-        return f"l_{self.name}_{self.size}_{self.channels}"
+        return super().__repr__()
 
     def __str__(self):
-        return self.__repr__()
+        return super().__str__()

@@ -40,7 +40,7 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
     layer_map = {
         str(l): l.name
         for l in net.layers
-        if not (isinstance(l, InputLayer) or isinstance(l, OutputLayer))
+        if not (isinstance(l, InputLayer))
     }
 
     return TorchContext(layer_map)

@@ -6,20 +6,17 @@ from bifrost.ir.parameter import ParameterContext
 
 
 class TorchContext(ParameterContext[str]):
-
+    imports = ["import torch", "import sys"]
     preamble = """
-import torch
-import sys
-
 _checkpoint = torch.load(sys.argv[1])
 _params = _checkpoint['state_dict']
 
 _param_map = {
-    "tau_mem_inv": (lambda v: "tau_m", 1.0/v),
-    "tau_syn_inv": (lambda v: "tau_syn_E", 1.0/v),
-    "tau_syn_inv": (lambda v: "tau_syn_E", 1.0/v),
-    "v_reset": (lambda v: "v_reset", v),
-    "v_th": (lambda v: "v_thresh", v),
+    "tau_mem_inv": lambda v: ("tau_m", 1.0/v),
+    "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/v),
+    "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/v),
+    "v_reset": lambda v: ("v_reset", v),
+    "v_th": lambda v: ("v_thresh", v),
 }
 """
 
@@ -34,8 +31,8 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, str]) -> None:
         self.layer_map = layer_map
 
-    def linear_weights(self, layer: str, channel: int) -> str:
-        return f"_params['{self.layer_map[layer]}'][:{channel}]"
+    def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
+        return f"_params['{self.layer_map[layer]}'][{channel_in}, {channel_out}]"
 
     def conv2d_weights(self, key: str, channel_in: int, channel_out: int) -> str:
         raise NotImplementedError()

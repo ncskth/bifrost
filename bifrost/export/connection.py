@@ -28,13 +28,14 @@ def export_connection(connection: Connection, context: ParameterContext[str],
             connector = export_connector(connection, ch_in, ch_out, context)
             synapse = export_synapse(connection)
             projection = [
-                f"{var} = {SIM_NAME}.Projection({connection.pre.variable(ch_in)}",
+                f"{var} = {SIM_NAME}.Projection(",
+                f"{connection.pre.variable(ch_in)}",
                 f"{connection.post.variable(ch_out)}",
                 f"{connector.value}",
                 f"{synapse.value})",
             ]
             proj = f"{join_str}{sp}".join(projection)
-            projections.append(f"{proj}\n{connector.configuration}")
+            projections.append(f"{proj}\n{connector.configuration}\n")
 
     return Statement(
         value="\n".join(projections),
@@ -72,7 +73,7 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       channel_in: int, channel_out: int,
                       context: ParameterContext[str],
                       spaces: int = 8) -> Statement:
-    weights = context.linear_weights(str(connection.post), channel_in)
+    weights = context.linear_weights(str(connection.post), channel_in, channel_out)
     var = connection.variable(f"{channel_in}_{channel_out}")
     return ConnectionStatement(
         f"{SIM_NAME}.AllToAllConnector()",
