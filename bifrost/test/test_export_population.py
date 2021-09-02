@@ -9,41 +9,49 @@ from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.parameter import ParameterContext
 
 from bifrost.export import population, statement
-
+from bifrost.export.pynn import SIM_NAME
 
 torch_context = TorchContext({"l": "0"})
 
 
 def test_input_to_pynn():
-    spif_layer = InputLayer("i", 1, SpiNNakerSPIFInput(x=1, y=2))
+    spif_layer = InputLayer("i", 1, 1,
+                            source=SpiNNakerSPIFInput(shape=[2, 1]))
     variable = population.export_layer_input(spif_layer)
     stm = statement.Statement(
-        "l_i_0 = p.Population(None,p.external_devices.SPIFRetinaDevice(base_key=0,width=1,height=2,sub_width=32,sub_height=16,input_x_shift=16,input_y_shift=0))"
+        f"l_i_1_0 = {SIM_NAME}.Population(None,{SIM_NAME}.external_devices."
+        f"SPIFRetinaDevice(base_key=0,width=1,height=2,sub_width=32,"
+        f"sub_height=16,input_x_shift=16,input_y_shift=0))"
     )
     assert variable == stm
 
 
 def test_lif_to_pynn():
-    l = NeuronLayer("l", channels=1, neurons=10)
-    lif_p = population.export_lif_neuron_type(l, torch_context)
+    l = NeuronLayer(name="l", channels=1, size=10)
+    lkey = "l_l_10_1" # l_{name}_{size}_{channels}
+    var = l.variable(0)
+    torch_context = TorchContext({lkey: "0"})
+    lif_p = population.export_neuron_type(l, torch_context)
+    struct = population.export_structure(l)
     actual = population.export_layer_neuron(l, torch_context)
-    assert actual == pynn.Statement(f"l_l_0 = p.Population(10, {lif_p.value})")
+    expected = f'{var} = {SIM_NAME}.Population(10, {lif_p.value}, structure={struct.value}, label="{var}")'
+    assert actual.value == expected
 
 
 def test_lif_neuron_to_pynn():
-    p = NeuronLayer("l", 1, 10)
-    s = population.export_lif_neuron_type(p, torch_context)
-    expected = ""
-    for p in torch_context.lif_parameters:
-        expected = "_param_map['tau_mem_inv'](_params['0'][tau_mem_inv]),"
-    expected = "_param_map['tau_mem_inv'](_params['0'][tau_mem_inv]),_param_map['tau_syn_inv'](_params['0'][tau_syn_inv]),_param_map['tau_syn_inv'](_params['0'][tau_syn_inv]),_param_map['v_reset'](_params['0'][v_reset]),_param_map['v_th'](_params['0'][v_th])"
-    assert s == pynn.Statement(f"p.IF_curr_exp({expected})")
+    l = NeuronLayer("l", 1, 10)
+    lkey = "l_l_1_10" # l_{name}_{size}_{channels}
+    torch_context = TorchContext({lkey: "0"})
+    s = population.export_neuron_type(l, torch_context)
+    expected = f"**(__nrn_params_{lkey}_f())"
+    assert s.value == f"{SIM_NAME}.IF_curr_exp({expected})"
 
 
 def test_dict_to_pynn_parameters():
     d = {"test": 12, "tau_m": "value"}
-    actual = population.export_dict(d)
-    assert actual == pynn.Statement("test=12,tau_m='value'")
+    actual = population.export_dict(d, join_str=',', n_spaces=0)
+    expected = "test=12,tau_m='value'"
+    assert actual.value == expected
 
 
 def test_dict_to_pynn_parameters_fail():

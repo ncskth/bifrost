@@ -32,11 +32,14 @@ def test_export_neurons_per_core():
 
 
 def test_export_single():
+    torch_context = TorchContext({"l_l_1_10": "0"})
+    # name, size, channels
     l = NeuronLayer("l", 1, 10)
     net = Network([l], set(), 100.1)
     out = export_network(net, torch_context)
     lif = export_layer_neuron(l, torch_context)
+    imports = "\n".join(lif.imports)
     assert (
         out
-        == f"{pynn.pynn_header(1.0)}\n{torch_context.preamble}\n{lif.value}\n{pynn.pynn_footer(100.1)}"
+        == f"{pynn.pynn_header(1.0)}\n{torch_context.preamble}\n{imports}\n{lif.value}\n{pynn.pynn_footer(100.1)}"
     )

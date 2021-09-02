@@ -8,8 +8,8 @@ from bifrost.ir.synapse import (
     StaticSynapse, ConvolutionSynapse, DenseSynapse)
 from bifrost.export.pynn import SIM_NAME
 
-def export_connection(
-    connection: Connection, context: ParameterContext[str]) -> Statement:
+def export_connection(connection: Connection, context: ParameterContext[str],
+                      join_str: str = ",\n", spaces: int = 4) -> Statement:
 
     # Convolution and Dense are a sub-class of Static
     if not isinstance(connection.post.synapse, StaticSynapse):
@@ -20,19 +20,21 @@ def export_connection(
     #     connection.pre.channels == connection.post.channels
     # ), f"LIF -> LIF connection channels not equal! {connection.pre.channels} != {connection.post.channels}"
 
+    sp = " " * spaces
     projections = []
     for ch_in in range(connection.pre.channels):
         for ch_out in range(connection.post.channels):
             var = connection.variable(f"{ch_in}_{ch_out}")
             connector = export_connector(connection, ch_in, ch_out, context)
             synapse = export_synapse(connection)
-            projection = f"{var} = {SIM_NAME}.Projection(" \
-                         f"{connection.pre.variable(ch_in)}, " \
-                         f"{connection.post.variable(ch_out)}, \n"\
-                         f"    {connector.value}, \n" \
-                         f"    {synapse.value})"
-
-            projections.append(projection + f"\n{connector.configuration}")
+            projection = [
+                f"{var} = {SIM_NAME}.Projection({connection.pre.variable(ch_in)}",
+                f"{connection.post.variable(ch_out)}",
+                f"{connector.value}",
+                f"{synapse.value})",
+            ]
+            proj = f"{join_str}{sp}".join(projection)
+            projections.append(f"{proj}\n{connector.configuration}")
 
     return Statement(
         value="\n".join(projections),
@@ -68,12 +70,13 @@ def export_connector(connection: Connection[Layer, Layer],
 
 def export_all_to_all(connection: Connection[Layer, Layer],
                       channel_in: int, channel_out: int,
-                      context: ParameterContext[str]) -> Statement:
-    weights = context.weights(connection.connector.weights_key, channel_in, channel_out)
-    config = f"{connection.variable(channel)}.set(weight={weights})"
+                      context: ParameterContext[str],
+                      spaces: int = 8) -> Statement:
+    weights = context.linear_weights(str(connection.post), channel_in)
+    var = connection.variable(f"{channel_in}_{channel_out}")
     return ConnectionStatement(
         f"{SIM_NAME}.AllToAllConnector()",
-        configuration=config,
+        configuration=f"{var}.set(weight={weights})",
     )
 
 def export_conv(connection: Connection[Layer, Layer],

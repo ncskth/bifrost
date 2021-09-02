@@ -11,7 +11,7 @@ class Layer:
     channels: int
 
     def variable(self, channel):
-        return f"l_{self.name}_{channel}"
+        return f"l_{self.name}_{self.size}_{channel}"
 
     def __repr__(self):
         return f"l_{self.name}_{self.size}_{self.channels}"

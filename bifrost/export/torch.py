@@ -34,7 +34,7 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, str]) -> None:
         self.layer_map = layer_map
 
-    def weights(self, layer: str, channel: int) -> str:
+    def linear_weights(self, layer: str, channel: int) -> str:
         return f"_params['{self.layer_map[layer]}'][:{channel}]"
 
     def conv2d_weights(self, key: str, channel_in: int, channel_out: int) -> str:

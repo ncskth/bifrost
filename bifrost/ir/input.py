@@ -4,7 +4,7 @@ from typing import Dict, List, Set, Any
 
 
 @dataclass
-class InputSource(Layer):
+class InputSource:
     shape: List[int]
 
 @dataclass
@@ -24,9 +24,15 @@ class InputLayer(Layer):
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):
-    x: int
-    y: int
     x_sub: int = 32
     y_sub: int = 16
     x_shift: int = 16
     y_shift: int = 0
+
+    @property
+    def x(self):
+        return self.shape[1]
+
+    @property
+    def y(self):
+        return self.shape[0]
