@@ -34,7 +34,8 @@ def test_lif_to_pynn():
     lif_p = population.export_neuron_type(l, torch_context)
     struct = population.export_structure(l)
     actual = population.export_layer_neuron(l, torch_context)
-    expected = f'{var} = {SIM_NAME}.Population(10, {lif_p.value}, structure={struct.value}, label="{var}")'
+    # population blocks end in a line break
+    expected = f'{var} = {SIM_NAME}.Population(10, {lif_p.value}, structure={struct.value}, label="{var}")\n'
     assert actual.value == expected
 
 

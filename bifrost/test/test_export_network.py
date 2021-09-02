@@ -9,6 +9,7 @@ from bifrost.export.torch import TorchContext
 
 class MockContext(ParameterContext):
     preamble = "Dubi\ndubi\ndubi\ndubdubdub"
+    imports = []
 
 
 torch_context = TorchContext({"l": "0"})

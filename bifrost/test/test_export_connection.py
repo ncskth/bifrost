@@ -29,8 +29,9 @@ def test_matrix_connection_to_pynn():
     c = Connection(l1, l2, MatrixConnector("layer.weights"))
     var = 'c_x__to__y_0_0'
     actual = export_connection(c, torch_context, join_str=", ", spaces=0)
-    expected = f"{var} = {SIM_NAME}.Projection(l_x_1_0, l_y_1_0, " \
+    # projections end in a line break
+    expected = f"{var} = {SIM_NAME}.Projection(\nl_x_1_0, l_y_1_0, " \
                f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())\n" \
-               f"{var}.set(weight=_params['lw'][:0])"
+               f"{var}.set(weight=_params['lw'][0, 0])\n"
     assert str(actual) == expected
     assert len(actual.imports) == 0

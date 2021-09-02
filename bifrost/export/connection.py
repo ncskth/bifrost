@@ -28,8 +28,8 @@ def export_connection(connection: Connection, context: ParameterContext[str],
             connector = export_connector(connection, ch_in, ch_out, context)
             synapse = export_synapse(connection)
             projection = [
-                f"{var} = {SIM_NAME}.Projection(",
-                f"{connection.pre.variable(ch_in)}",
+                f"{var} = {SIM_NAME}.Projection(\n"
+                f"{sp}{connection.pre.variable(ch_in)}",
                 f"{connection.post.variable(ch_out)}",
                 f"{connector.value}",
                 f"{synapse.value})",
