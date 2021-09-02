@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
-
-from .layer import Layer
+from bifrost.ir.synapse import Synapse, StaticSynapse
+from bifrost.ir.layer import Layer
 
 
 class OutputSource:
@@ -11,6 +11,7 @@ class OutputSource:
 @dataclass
 class OutputLayer(Layer):
     sink: OutputSource
+    synapse: Synapse = StaticSynapse()
 
 
 @dataclass

@@ -36,8 +36,13 @@ def torch_to_network(
     )
 
 
-def torch_to_context(modules: List[torch.nn.Module]) -> ParameterContext[str]:
-    layer_map = {"0": "0", "1": "1"}
+def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterContext[str]:
+    layer_map = {
+        str(l): l.name
+        for l in net.layers
+        if not (isinstance(l, InputLayer) or isinstance(l, OutputLayer))
+    }
+
     return TorchContext(layer_map)
 
 
@@ -71,6 +76,6 @@ def module_to_layer(
     module: torch.nn.Module, index: int, input_channels: int, input_neurons: int
 ) -> Layer:
     if isinstance(module, norse.LIFCell):
-        return NeuronLayer(str(index), input_channels, input_neurons)
+        return NeuronLayer(str(index), input_channels, input_neurons, index=index)
     else:
         raise ValueError("Unknown torch module layer", module)

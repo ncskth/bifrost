@@ -34,5 +34,5 @@ def parse_torch(
     model: torch.nn.Module, input_layer: InputLayer, output_layer: OutputLayer
 ) -> Tuple[Network, ParameterContext[str]]:
     network = torch_to_network(model, input_layer, output_layer)
-    context = torch_to_context(model)
+    context = torch_to_context(network, model)
     return network, context
