@@ -1,4 +1,4 @@
-from bifrost.extract.mlgenn.translations import (
+from bifrost.extract.ml_genn.translations import (
     cells as cell_translations,
     layers as layer_translations,
     connectors as connector_translations,
@@ -74,6 +74,6 @@ def extract_all(mlgenn_network):
     #       construction so they are 'in order' and indices are correct
     # TODO: how do we get the input dataset name/structure?
     #       should we leave this problem for a command line parameter?
-    return {str(layer_idx): extract_layer(layer, layer_idx)
+    return {f"{layer_idx:03d}": extract_layer(layer, layer_idx)
             for layer_idx, layer in enumerate(mlgenn_network.layers)}
 

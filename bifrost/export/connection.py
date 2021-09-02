@@ -102,7 +102,7 @@ def export_dense(connection: Connection[Layer, Layer],
                  context: ParameterContext[str],
                  spaces: int = 8) -> Statement:
     sp = " " * spaces
-    weights = context.linear_weights(str(connection.post), channel_in)
+    weights = context.linear_weights(str(connection.post), channel_in, channel_out)
     pool_shape, pool_stride = context.conv2d_pooling(str(connection.post))
     # todo: padding here needs to be somewhat decoded but I'm not sure how to
     return ConnectionStatement(

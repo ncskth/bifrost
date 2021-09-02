@@ -10,3 +10,5 @@ from .layer import *
 from .network import *
 from .parameter import *
 from .synapse import *
+from .input import *
+from .output import *
