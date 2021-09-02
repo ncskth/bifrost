@@ -1,8 +1,9 @@
 SIM_NAME = 'spynn'
 
+pynn_imports = [f"import spynnaker8 as {SIM_NAME}"]
+
 def pynn_header(timestep=1.0):
     return f"""
-import spynnaker8 as {SIM_NAME}
 {SIM_NAME}.setup({timestep})
 """
 

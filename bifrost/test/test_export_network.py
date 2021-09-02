@@ -18,16 +18,18 @@ def test_export_empty():
     c = MockContext()
     n = Network([], [], 100.1)
     out = export_network(n, c)
-    assert out == f"{pynn.pynn_header(1.0)}\n{c.preamble}\n\n{pynn.pynn_footer(100.1)}"
+    imports = "\n".join(pynn.pynn_imports)
+    assert out == f"{imports}\n{pynn.pynn_header(1.0)}\n{c.preamble}\n\n{pynn.pynn_footer(100.1)}"
 
 
 def test_export_neurons_per_core():
     c = MockContext()
     n = Network([], [], 100.1, config=["some", "config"])
     out = export_network(n, c)
+    imports = "\n".join(pynn.pynn_imports)
     assert (
         out
-        == f"{pynn.pynn_header(1.0)}\n{c.preamble}\nsome\nconfig\n\n{pynn.pynn_footer(100.1)}"
+        == f"{imports}\n{pynn.pynn_header(1.0)}\n{c.preamble}\nsome\nconfig\n\n{pynn.pynn_footer(100.1)}"
     )
 
 
@@ -38,8 +40,8 @@ def test_export_single():
     net = Network([l], set(), 100.1)
     out = export_network(net, torch_context)
     lif = export_layer_neuron(l, torch_context)
-    imports = "\n".join(lif.imports)
-    assert (
-        out
-        == f"{pynn.pynn_header(1.0)}\n{torch_context.preamble}\n{imports}\n{lif.value}\n{pynn.pynn_footer(100.1)}"
-    )
+    imports = "\n".join(sorted(set(pynn.pynn_imports+lif.imports)))
+    lif_defs = "\n".join(list(set(lif.preambles)))
+    expected = f"{imports}\n{pynn.pynn_header(1.0)}\n{torch_context.preamble}\n" \
+               f"{lif_defs}\n{lif.value}\n{pynn.pynn_footer(100.1)}"
+    assert (out == expected)
