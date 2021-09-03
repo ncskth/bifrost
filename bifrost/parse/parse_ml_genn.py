@@ -74,6 +74,7 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
              for i in range(len(layers[:-1]))]
 
     network = Network(layers=layers, connections=conns)
+
     if output_layer is not None:
         layers = network.layers + [output_layer]
         out_conn = [Connection(pre=network.layers[-1], post=output_layer,

@@ -42,7 +42,6 @@ class Statement:
         else:
             raise ValueError("Expected Statement for addition, but found ", other)
 
-    # NOTE: in the end, we want to create this from a sum of **ALL** Statements
     def __repr__(self) -> str:
         imports = "\n".join(self.imports)
         sepi = "\n\n" if len(imports) > 0 else ""

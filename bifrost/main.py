@@ -4,7 +4,7 @@ import numpy as np
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
 from bifrost.ir.parameter import ParameterContext
-from typing import Tuple
+from typing import Tuple, Dict, List
 from bifrost.ir.connection import MatrixConnector, Connection
 from bifrost.ir.layer import NeuronLayer
 from bifrost.exporter import export_network
@@ -13,16 +13,29 @@ from bifrost.ir.network import Network
 
 
 
-def export(model_import, text_shape, writer, net_dict_fname='abc.npz'):
+def export(model_import, text_shape, writer, record: Dict[str, List[int]]):
+    # what to do with the text_shape argument?
+
     model = __import__(model_import) # this will do a import model_import as model
     parser, saver = get_parser(model)
     shape = make_tuple(text_shape)
     data = torch.zeros(shape)
     net, context, net_dict = parser(model, inp, out)
     saver(net_dict, net_dict_fname)
+    set_recordings(net, record)
     result = export_network(net, context)
     writer.write(result)
 
+def set_recordings(network, record: Dict[str, List[int]]) -> Network:
+    for what in record:
+        for which in record[what]:
+            if isinstance(network.layers[which], OutputLayer):
+                which -= 1
+
+            if isinstance(network.layers[which].record, tuple):
+                network.layers[which].record = [what]
+            else:
+                network.layers[which].record.append(what)
 
 def get_parser_and_saver(model):
     class_name = model.__class__.__name__.lower()

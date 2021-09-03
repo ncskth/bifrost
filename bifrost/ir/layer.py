@@ -27,6 +27,7 @@ class NeuronLayer(Layer):
     index: int = 0
     key: str = ""
     shape: List[int] = (1, 1)
+    record: List[str] = ()
 
     def __repr__(self):
         return super().__repr__()

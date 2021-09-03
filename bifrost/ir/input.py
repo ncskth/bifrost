@@ -37,4 +37,5 @@ class DummyTestInputSource(InputSource):
 @dataclass
 class InputLayer(Layer):
     source: InputSource
+    record: List[str] = ()
 
