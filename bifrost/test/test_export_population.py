@@ -17,11 +17,11 @@ torch_context = TorchContext({"l": "0"})
 def test_input_to_pynn():
     spif_layer = InputLayer("i", 1, 1,
                             source=SpiNNakerSPIFInput(shape=[2, 1]))
-    variable = population.export_layer_input(spif_layer)
+    variable = population.export_layer_input(spif_layer, torch_context)
     stm = statement.Statement(
         f"l_i_1_0 = {SIM_NAME}.Population(None,{SIM_NAME}.external_devices."
         f"SPIFRetinaDevice(base_key=0,width=1,height=2,sub_width=32,"
-        f"sub_height=16,input_x_shift=16,input_y_shift=0))"
+        f"sub_height=16,input_x_shift=16,input_y_shift=0))\n"
     )
     assert variable == stm
 

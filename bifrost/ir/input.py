@@ -16,12 +16,6 @@ class ImageDataset(InputSource):
 class PoissonImageDataset(ImageDataset):
     intensity_to_rate: float
 
-
-@dataclass
-class InputLayer(Layer):
-    source: InputSource
-
-
 @dataclass
 class SpiNNakerSPIFInput(InputSource):
     x_sub: int = 32
@@ -36,3 +30,11 @@ class SpiNNakerSPIFInput(InputSource):
     @property
     def y(self):
         return self.shape[0]
+
+class DummyTestInputSource(InputSource):
+    pass
+
+@dataclass
+class InputLayer(Layer):
+    source: InputSource
+

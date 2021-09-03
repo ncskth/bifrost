@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
-from bifrost.ir.output import OutputLayer
+from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput, DummyTestInputSource
+from bifrost.ir.output import OutputLayer, EthernetOutput, DummyTestOutputSink
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from bifrost.export.statement import Statement
@@ -65,9 +65,9 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     elif isinstance(layer, NeuronLayer):
         return export_layer_neuron(layer, context)
     elif isinstance(layer, InputLayer):
-        pass
+        return export_layer_input(layer, context)
     elif isinstance(layer, OutputLayer):
-        pass
+        return export_layer_output(layer, context)
     else:
         raise ValueError("Unknown layer type", layer)
 
@@ -105,19 +105,38 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     return statement
 
 
-def export_layer_input(layer: InputLayer) -> Statement:
-    if isinstance(layer.source, SpiNNakerSPIFInput):
-        spif_layer = layer.source
-        return Statement(
+def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
+    source = layer.source
+    if isinstance(source, SpiNNakerSPIFInput):
+        spif_layer = source
+        statement = Statement(
             [
                 f"""{layer.variable(channel)} = {SIM_NAME}.Population(None,{SIM_NAME}.external_devices.SPIFRetinaDevice(\
-base_key={channel},width={spif_layer.x},height={spif_layer.y},sub_width={spif_layer.x_sub},sub_height={spif_layer.y_sub},\
-input_x_shift={spif_layer.x_shift},input_y_shift={spif_layer.y_shift}))"""
+base_key={channel},width={source.x},height={source.y},sub_width={source.x_sub},sub_height={source.y_sub},\
+input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"""
                 for channel in range(layer.channels)
             ]
         )
+    elif isinstance(source, DummyTestInputSource):
+        statement = Statement(f"""{layer.variable(0)} = DummyInputSource()""")
+    else:
+        raise ValueError("Unknown input source", source)
+
+    statement += Statement("")  # add carriage return
+    return statement
+
+
+def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> Statement:
+    sink = layer.sink
+    if isinstance(sink, EthernetOutput):
+        statement = Statement(f"""{layer.variable(0)} = EthernetOutputSink()""")
+    elif isinstance(sink, DummyTestOutputSink):
+        statement = Statement(f"""{layer.variable(0)} = DummyOutputSink()""")
     else:
         raise ValueError("Unknown input source", layer.source)
+
+    statement += Statement("")  # add carriage return
+    return statement
 
 def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 0) -> Statement:

@@ -12,6 +12,9 @@ class EthernetOutput(OutputSink):
     host: Optional[str] = "localhost"
     post: Optional[int] = 3333
 
+class DummyTestOutputSink(OutputSink):
+    pass
+
 
 @dataclass
 class OutputLayer(Layer):
