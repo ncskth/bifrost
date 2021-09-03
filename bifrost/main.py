@@ -11,20 +11,13 @@ from bifrost.exporter import export_network
 
 from bifrost.ir.network import Network
 
-# todo: figure out if the input model is ml_genn or norse?
 
-def export(model, text_shape, writer, net_dict_fname='abc.npz'):
+
+def export(model_import, text_shape, writer, net_dict_fname='abc.npz'):
+    model = __import__(model_import) # this will do a import model_import as model
     parser, saver = get_parser(model)
     shape = make_tuple(text_shape)
     data = torch.zeros(shape)
-    # TODO: Parse graph
-    # graph = model_to_graph(model, data)
-    # layers = [NeuronLayer("l1", 1, 1), NeuronLayer("l2", 1, 1)]
-    # connections = [Connection("l1", "l2", MatrixConnector())]
-    #
-    # context = TorchContext({})
-    #
-    # net = Network(layers=layers, connections=connections, runtime=100.0, timestep=1.0)
     net, context, net_dict = parser(model, inp, out)
     saver(net_dict, net_dict_fname)
     result = export_network(net, context)
@@ -32,7 +25,9 @@ def export(model, text_shape, writer, net_dict_fname='abc.npz'):
 
 
 def get_parser_and_saver(model):
-    if 'torch' in model.__class__.__name__.lower():
+    class_name = model.__class__.__name__.lower()
+    # for torch/norse
+    if 'sequentialstate' in class_name and hasattr(model, '_modules'):
         from bifrost.export.torch import TorchContext
         from bifrost.parse.parse_torch import torch_to_network, torch_to_context
         import torch
@@ -47,7 +42,8 @@ def get_parser_and_saver(model):
 
         return parse_torch, save_net_dict
 
-    elif hasattr(model, 'g_model'):
+    # for ml_genn
+    elif 'model' in class_name and hasattr(model, 'g_model'):
         from bifrost.parse.parse_ml_genn import ml_genn_to_network
         def save_net_dict(net_dict, filename):
             np.savez_compressed(filename, **net_dict)

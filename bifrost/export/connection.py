@@ -24,7 +24,7 @@ def export_connection(connection: Connection, context: ParameterContext[str],
     projections = []
     for ch_in in range(connection.pre.channels):
         for ch_out in range(connection.post.channels):
-            var = connection.variable(f"{ch_in}_{ch_out}")
+            var = connection.variable(ch_in, ch_out)
             connector = export_connector(connection, ch_in, ch_out, context)
             synapse = export_synapse(connection)
             projection = [
@@ -74,7 +74,7 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       context: ParameterContext[str],
                       spaces: int = 8) -> Statement:
     weights = context.linear_weights(str(connection.post), channel_in, channel_out)
-    var = connection.variable(f"{channel_in}_{channel_out}")
+    var = connection.variable(channel_in, channel_out)
     return ConnectionStatement(
         f"{SIM_NAME}.AllToAllConnector()",
         configuration=f"{var}.set(weight={weights})",

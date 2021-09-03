@@ -38,5 +38,5 @@ class Connection(Generic[From, To]):
     post: To
     connector: Connector
 
-    def variable(self, channel: int) -> str:
-        return f"c_{self.pre.name}__to__{self.post.name}_{channel}"
+    def variable(self, channel_in: int, channel_out: int) -> str:
+        return f"c_{self.pre.name}_{channel_in}__to__{self.post.name}_{channel_out}"

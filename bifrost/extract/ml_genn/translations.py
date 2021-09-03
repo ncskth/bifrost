@@ -1,5 +1,6 @@
 import numpy as np
 from bifrost.extract.utils import (size_from_shape)
+from bifrost.extract.ml_genn.utils import dense_weight_transform
 
 cells = {
     'IFNeurons': {
@@ -52,13 +53,13 @@ layers = {
             'pool_shape': ('upstream_synapses[0].pool_size', ),
             'pool_stride': ('upstream_synapses[0].pool_strides', ),
             'size': ('shape[0]', ),
-            'weights': ('upstream_synapses[0].weights', np.copy),
+            'weights': ('upstream_synapses[0]', dense_weight_transform),
         },
         'DenseSynapses': {
             'target': 'PoolDenseLayer',
             'check': ('upstream_synapses[0].__class__.__name__', ),
             'size': ('shape[0]', ),
-            'weights': ('upstream_synapses[0].weights', np.copy),
+            'weights': ('upstream_synapses[0]', dense_weight_transform),
         },
     }
 }

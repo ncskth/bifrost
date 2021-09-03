@@ -27,7 +27,7 @@ def test_matrix_connection_to_pynn():
     l2 = NeuronLayer("y", 1, 1)
     torch_context = TorchContext({"l_x_1_1": "0", "l_y_1_1": "lw"})
     c = Connection(l1, l2, MatrixConnector("layer.weights"))
-    var = 'c_x__to__y_0_0'
+    var = 'c_x_0__to__y_0'
     actual = export_connection(c, torch_context, join_str=", ", spaces=0)
     # projections end in a line break
     expected = f"{var} = {SIM_NAME}.Projection(\nl_x_1_0, l_y_1_0, " \
