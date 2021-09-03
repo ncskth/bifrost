@@ -25,15 +25,14 @@ def torch_to_network(
         modules=list(model.children()), index=0, network=default_network
     )
 
-    return Network(
-        layers=network.layers + [output_layer],
-        connections=network.connections
-        + [
-            Connection(
-                pre=network.layers[-1], post=output_layer, connector=MatrixConnector("0")
-            )
-        ],
-    )
+    if output_layer is not None:
+        layers = network.layers + [output_layer]
+        out_conn = [Connection(pre=network.layers[-1], post=output_layer,
+                               connector=MatrixConnector("0"))]
+        conns = network.connections + out_conn
+        network = Network(layers=layers, connections=conns)
+
+    return network
 
 
 def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterContext[str]:
