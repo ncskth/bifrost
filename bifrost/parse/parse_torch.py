@@ -68,13 +68,31 @@ def torch_to_network(
 
 
 def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterContext[str]:
+    input_layer = net.layers[0] # assuming the first layer is of input type
+    input_shape = (1, input_layer.channels, *input_layer.source.shape)
+    net_dict = module_to_list(modules, input_shape)
+
+    for k in net_dict:
+        module = net_dict[k].module
+        if hasattr(module, 'weight'):
+            print(k, module.weight.detach().numpy())
+            net_dict[k]['weight'] = module.weight.detach().numpy()
+
+        if hasattr(module, 'p'):  # parameters for LI or LIF neurons
+            params = module.p
+            for name, val in zip(params._fields, params):
+                print(k, name, val)
+                net_dict[k][name] = val.detach().numpy()
+
+
+
     layer_map = {
         str(l): l.name
         for l in net.layers
         if not (isinstance(l, InputLayer))
     }
 
-    return TorchContext(layer_map)
+    return TorchContext(layer_map), net_dict
 
 
 def module_to_ir(
