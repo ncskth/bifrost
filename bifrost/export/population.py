@@ -201,3 +201,15 @@ def get_pynn_cell_type(cell, synapse):
 
 
 # def output_ethernet(layer: )
+# create python injector
+# 2  def send_spike(label, sender):
+# 3 sender.send_spike(label, 0, send_full_keys=True)
+# 4
+# 5 # set up python injector connection
+# 6  live_spikes_connection =
+# 7      sim.external_devices.SpynnakerLiveSpikesConnection(
+# 8          send_labels=[“spike_sender”])
+# 9
+# 10 # register python injector with injector connection
+# 11 live_spikes_connection.add_start_callback(“spike_sender”, send_spike)
+# activate_live_output_for(receiver, database_notify_port_num=19996)
