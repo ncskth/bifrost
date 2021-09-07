@@ -13,7 +13,7 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 from collections import OrderedDict
 from typing import Dict
-
+from copy import copy
 import numpy as np
 
 import os
@@ -71,18 +71,18 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
     input_layer = net.layers[0] # assuming the first layer is of input type
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
     net_dict = module_to_list(modules, input_shape)
-
+    net_copy = copy(net_dict)
     for k in net_dict:
         module = net_dict[k].module
         if hasattr(module, 'weight'):
             print(k, module.weight.detach().numpy())
-            net_dict[k]['weight'] = module.weight.detach().numpy()
+            net_copy[k]['weight'] = module.weight.detach().numpy()
 
         if hasattr(module, 'p'):  # parameters for LI or LIF neurons
             params = module.p
             for name, val in zip(params._fields, params):
                 print(k, name, val)
-                net_dict[k][name] = val.detach().numpy()
+                net_copy[k][name] = val.detach().numpy()
 
 
 
