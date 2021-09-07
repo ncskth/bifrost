@@ -1,25 +1,28 @@
 from ast import literal_eval as make_tuple
 
 import numpy as np
+from typing import Tuple, Dict, List
+
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
 from bifrost.ir.parameter import ParameterContext
-from typing import Tuple, Dict, List
 from bifrost.ir.connection import MatrixConnector, Connection
 from bifrost.ir.layer import NeuronLayer
 from bifrost.exporter import export_network
-
 from bifrost.ir.network import Network
 
 
 
 def export(model_import, text_shape, writer, record: Dict[str, List[int]]):
-    # what to do with the text_shape argument?
+    # todo:
+    #  * what to do with the text_shape argument?
+    #  * actually, the shape has to be set into input layer source
+    #  * also, n_channels has to be set into the main attrs of input layer
+    #  * how to pass in the input/output layers?
 
     model = __import__(model_import) # this will do a import model_import as model
     parser, saver = get_parser(model)
     shape = make_tuple(text_shape)
-    data = torch.zeros(shape)
     net, context, net_dict = parser(model, inp, out)
     saver(net_dict, net_dict_fname)
     set_recordings(net, record)
