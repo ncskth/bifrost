@@ -19,6 +19,7 @@ class DummyTestOutputSink(OutputSink):
 @dataclass
 class OutputLayer(Layer):
     sink: OutputSink
+    key: str = ""
     synapse: Synapse = StaticSynapse()
 
     def __repr__(self):

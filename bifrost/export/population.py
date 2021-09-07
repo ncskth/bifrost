@@ -85,7 +85,7 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
         var = f"{layer.variable(channel)}"
         par = param_template.format(var)
         pop = [f"{var} = {SIM_NAME}.Population({par})"]
-        recs = [export_record(layer, channel)]
+        recs = export_record(layer, channel)
 
         statement += Statement("\n".join(pop+recs),
                                imports=neuron.imports,
@@ -122,7 +122,7 @@ input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"""
         )
     elif isinstance(source, DummyTestInputSource):
         pop = [f"{layer.variable(0)} = DummyInputSource()"]
-        recs = [export_record(layer, 0)]
+        recs = export_record(layer, 0)
         statement = Statement("\n".join(pop + recs))
     else:
         raise ValueError("Unknown input source", source)
@@ -132,14 +132,14 @@ input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"""
 
 def export_record(layer: Layer, channel: int):
     if len(layer.record) == 0:
-        return ""
+        return []
     elif len(layer.record) == 1:
         rs = f"\"{layer.record[0]}\""
     else:
         rs = ", ".join(f"\"{r}\"" for r in layer.record)
         rs = f"[{rs}]"
 
-    return f"{layer.variable(channel)}.record({rs})"
+    return [f"{layer.variable(channel)}.record({rs})"]
 
 def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> Statement:
     sink = layer.sink

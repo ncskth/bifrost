@@ -50,11 +50,11 @@ def get_parser_and_saver(model):
         def parse_torch(model: torch.nn.Module, input_layer: InputLayer,
                         output_layer: OutputLayer) -> Tuple[Network, ParameterContext[str]]:
             network = torch_to_network(model, input_layer, output_layer)
-            context = torch_to_context(network, model)
-            return network, context, model
+            context, net_dict = torch_to_context(network, model)
+            return network, context, net_dict
 
         def save_net_dict(net_dict, filename):
-            pass
+            np.savez_compressed(filename, **net_dict)
 
         return parse_torch, save_net_dict
 

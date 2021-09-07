@@ -26,16 +26,11 @@ class DenseConnector(Connector):
 @dataclass
 class ConvolutionConnector(Connector):
     weights_key: str = "weights"
-    padding_key: str = "padding"
     pooling_key: str = "pooling"
 
-@dataclass
-class PoolingConnector(Connector):
-    pooling_key: str = "pooling"
 
 From = TypeVar("From", Layer, Layer)
 To = TypeVar("To", Layer, Layer)
-
 
 @dataclass
 class Connection(Generic[From, To]):

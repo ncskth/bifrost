@@ -31,17 +31,23 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params['{self.layer_map[layer]}'][{channel_in}, {channel_out}]"
+        return f"_params['{layer}']['weights'][{channel_in}, {channel_out}]"
 
-    def conv2d_weights(self, key: str, channel_in: int, channel_out: int) -> str:
-        raise NotImplementedError()
+    def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
+        return f"_params['{layer}']['weights'][{channel_in}, {channel_out}]"
+
+    def conv2d_strides(self, layer: str) -> str:
+        return f"_params['{layer}']['stride']"
+
+    def conv2d_pooling(self, layer: str) -> str:
+        return f"_params['{layer}']['kernel_size']", f"_params['{layer}']['stride']"
 
     def neuron_parameter_base(self, layer:str) -> str:
-        return f"_param_map['{{}}']"\
+        return f"_param_map[{{}}]"\
                f"(_params['{self.layer_map[layer]}'][{{}}])"
 
     def neuron_parameter(self, layer: str, parameter_name: str) -> str:
-        return f"_param_map['{parameter_name}']"\
+        return f"_param_map[{parameter_name}]"\
                f"(_params['{self.layer_map[layer]}'][{parameter_name}])"
 
     def parameter_names(self, cell: Cell) -> List[str]:

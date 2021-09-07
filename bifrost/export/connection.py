@@ -73,7 +73,8 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       channel_in: int, channel_out: int,
                       context: ParameterContext[str],
                       spaces: int = 8) -> Statement:
-    weights = context.linear_weights(str(connection.post), channel_in, channel_out)
+    conn = connection.connector
+    weights = context.linear_weights(conn.weights_key, channel_in, channel_out)
     var = connection.variable(channel_in, channel_out)
     return ConnectionStatement(
         f"{SIM_NAME}.AllToAllConnector()",
@@ -85,10 +86,12 @@ def export_conv(connection: Connection[Layer, Layer],
                 context: ParameterContext[str],
                 spaces: int = 8) -> Statement:
     sp = " " * spaces
+    conn = connection.connector
     weights = context.conv2d_weights(
-                str(connection.post), channel_in, channel_out)
-    strides = context.conv2d_strides(str(connection.post))
-    pool_shape, pool_stride = context.conv2d_pooling(str(connection.post))
+                conn.weights_key, channel_in, channel_out)
+    strides = context.conv2d_strides(conn.weights_key)
+    pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
+                               if len(conn.pooling_key) else ('None', 'None'))
     # todo: padding here needs to be somewhat decoded but I'm not sure how to
     return ConnectionStatement(
         f"{SIM_NAME}.ConvolutionConnector({weights}, \n"
@@ -102,8 +105,10 @@ def export_dense(connection: Connection[Layer, Layer],
                  context: ParameterContext[str],
                  spaces: int = 8) -> Statement:
     sp = " " * spaces
-    weights = context.linear_weights(str(connection.post), channel_in, channel_out)
-    pool_shape, pool_stride = context.conv2d_pooling(str(connection.post))
+    conn = connection.connector
+    weights = context.linear_weights(conn.weights_key, channel_in, channel_out)
+    pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
+                               if len(conn.pooling_key) else 'None', 'None')
     # todo: padding here needs to be somewhat decoded but I'm not sure how to
     return ConnectionStatement(
         f"{SIM_NAME}.DenseConnector({weights}, \n"

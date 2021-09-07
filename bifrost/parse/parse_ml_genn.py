@@ -54,7 +54,9 @@ def to_neuron_layer(index, network_dictionary):
 
 def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
     ldict = copy(network_dictionary[post.key])
-    conn = get_ir_class(ldict['connector_type'])()
+    conn = get_ir_class(ldict['connector_type'])(post.key)
+    if 'pool_shape' in ldict['params']:
+        conn.pooling_key = str(post.key)
     return Connection(pre, post, conn)
 
 

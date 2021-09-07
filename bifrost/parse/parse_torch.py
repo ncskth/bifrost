@@ -3,11 +3,13 @@ from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
 from bifrost.ir.connection import (
     AllToAllConnector, Connection, MatrixConnector, ConvolutionConnector,
-    DenseConnector, PoolingConnector, Connector
+    DenseConnector, Connector
 )
 from bifrost.ir.cell import LIFCell, LICell
 from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.ir.synapse import Synapse, ConvolutionSynapse, DenseSynapse
+from bifrost.ir.synapse import (
+    Synapse, ConvolutionSynapse, DenseSynapse, StaticSynapse
+)
 from typing import Callable, List, Optional, Tuple
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
@@ -21,6 +23,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=""
 
 import torch
 torch.device("cpu")
+from torch import Tensor
 
 import pytorch_lightning as pl
 from torchinfo import summary
@@ -31,10 +34,14 @@ import norse.torch as norse
 
 Continuation = Callable[[Network], Network]
 
+def layerinfo_to_dict(layerinfo: LayerInfo) -> Dict:
+    return {k: getattr(layerinfo, k) for k in vars(layerinfo)}
+
+
 def module_to_list(model: torch.nn.Module, data_shape: tuple):
     s = summary(model, data_shape, verbose=0)
 
-    ld = OrderedDict({i: l
+    ld = OrderedDict({f"{i:03d}": layerinfo_to_dict(l)
                       for i, l in enumerate(s.summary_list)
                       if not (isinstance(l.module, torch.nn.BatchNorm2d) or
                               isinstance(l.module, norse.SequentialState) or
@@ -71,23 +78,37 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
     input_layer = net.layers[0] # assuming the first layer is of input type
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
     net_dict = module_to_list(modules, input_shape)
-    net_copy = copy(net_dict)
-    for k in net_dict:
-        module = net_dict[k].module
-        if hasattr(module, 'weight'):
-            print(k, module.weight.detach().numpy())
-            net_copy[k]['weight'] = module.weight.detach().numpy()
+    keys = list(net_dict.keys())
+    last_stride_idx = 0
+    for idx, k in enumerate(net_dict):
+        module = net_dict[k]['module']
+        name = net_dict[k]['class_name'].lower()
+        if name in ('avgpool2d', 'conv2d'):
+            for name in vars(module):
+                if name[0] == '_':
+                    continue
+                val = getattr(module, name)
+                if isinstance(val, Tensor):
+                    val = val.detach().numpy()
 
-        if hasattr(module, 'p'):  # parameters for LI or LIF neurons
+                net_dict[k][name] = val
+
+            params = module._parameters
+            for p, val in params.items():
+                if isinstance(val, Tensor):
+                    val = val.detach().numpy()
+
+                net_dict[k][p] = val
+
+        if name in ('lifcell', 'licell'):  # parameters for LI or LIF neurons
             params = module.p
             for name, val in zip(params._fields, params):
-                print(k, name, val)
-                net_copy[k][name] = val.detach().numpy()
-
-
+                if not isinstance(val, Tensor):
+                    continue
+                net_dict[k][name] = val.detach().numpy()
 
     layer_map = {
-        str(l): l.name
+        str(l): l.key
         for l in net.layers
         if not (isinstance(l, InputLayer))
     }
@@ -95,11 +116,7 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
     return TorchContext(layer_map), net_dict
 
 
-def module_to_ir(
-    modules: Dict[int, LayerInfo],
-    network: Network,
-) -> Network:
-
+def module_to_ir(modules: Dict[int, LayerInfo], network: Network) -> Network:
     layer_map = {}
     layers = network.layers
     connections = network.connections
@@ -107,19 +124,19 @@ def module_to_ir(
     last_neuron_idx = - 1
     for idx, k in enumerate(keys):
         layer_info = modules[k]
-        name = layer_info.class_name.lower()
-        if name in ['conv2d', 'avgpool2d']:
+        name = layer_info['class_name'].lower()
+        if name in ['conv2d', 'avgpool2d', 'linear']:
             continue
 
         if name in ['licell', 'lifcell']:
-            size = int(np.prod(layer_info.output_size[-2:]))
-            channels = layer_info.output_size[1]
+            size = int(np.prod(layer_info['output_size'][-2:]))
+            channels = layer_info['output_size'][1]
             cell = __choose_cell(layer_info)
 
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
             post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
-                               synapse=synapse)
+                               synapse=synapse, key=k)
             conn = Connection(layers[-1], post, connector)
 
             layers.append(post)
@@ -135,7 +152,7 @@ def module_to_ir(
 
 
 def __choose_cell(layer_info:LayerInfo):
-    name = layer_info.class_name
+    name = layer_info['class_name']
     if 'licell' in name:
         return LICell()
     else:
@@ -153,22 +170,23 @@ def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
     syn = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        name = modules[k].class_name.lower()
-        if name in 'conv2d':
+        name = modules[k]['class_name'].lower()
+        if 'conv2d' in name:
             syn = ConvolutionSynapse()
             continue
-        elif name in 'dense':
+        elif 'dense' in name:
             syn = DenseSynapse()
             continue
-        elif name in 'linear':
+        elif 'linear' in name:
             syn = StaticSynapse()
-        elif name in 'avgpool2d':
+            continue
+        elif 'avgpool2d' in name:
             continue
         # this should not be reached
         raise ValueError("Unknown connector", name)
 
     layer_info = modules[keys[end_idx]]
-    syn.synapse_shape = __choose_synapse_shape(layer_info.module.p)
+    syn.synapse_shape = __choose_synapse_shape(layer_info['module'].p)
     # note: seems we only support current synapse types as of now (7/9/21)
     return syn
 
@@ -179,16 +197,17 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[int],
     ctor = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        name = modules[k].class_name.lower()
+        name = modules[k]['class_name'].lower()
+        pool = '' if pool_idx is None else str(pool_idx)
         if name in 'conv2d':
-            ctor = ConvolutionConnector(str(k), pooling_key=str(pool_idx))
+            ctor = ConvolutionConnector(str(k), pooling_key=pool)
             continue
         elif name in 'dense':
-            ctor = DenseConnector(str(k), pooling_key=str(pool_idx))
+            ctor = DenseConnector(str(k), pooling_key=pool)
             continue
         elif name in 'linear':
             ctor = MatrixConnector(str(k))
-
+            continue
         elif name in 'avgpool2d':
             pool_idx = k
             continue
