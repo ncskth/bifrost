@@ -7,6 +7,7 @@ from typing import Callable, List, Optional, Tuple
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 import torch
+import pytorch_lightning as pl
 
 import norse.torch as norse
 
@@ -16,8 +17,8 @@ Continuation = Callable[[Network], Network]
 def torch_to_network(
     model: torch.nn.Module, input_layer: InputLayer, output_layer: OutputLayer
 ) -> Network:
-    if not isinstance(model, norse.SequentialState):
-        raise ValueError("Unknown model type", type(model))
+    if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
+            raise ValueError("Unknown model type", type(model))
 
     default_network = Network(layers=[input_layer], connections=[])
 
@@ -52,6 +53,13 @@ def module_to_ir(
 ) -> Network:
     if len(modules) == 0:
         return network
+
+    if isinstance(modules[0], torch.nn.CrossEntropyLoss):
+        return module_to_ir(modules[1:], index + 1, network)
+
+    if isinstance(modules[0], norse.SequentialState):
+        return module_to_ir(list(modules[0].children()), index, network)
+
     if isinstance(modules[0], torch.nn.Linear):
         assert (
             len(modules) > 0
@@ -67,8 +75,18 @@ def module_to_ir(
             + [connection],
         )
         return module_to_ir(modules[2:], index + 2, network)
-    else:
-        raise ValueError("Unknown torch module", modules[0])
+
+    if isinstance(modules[0], torch.nn.Conv2d):
+        assert (
+            len(modules) > 0
+        ), "Linear layer requires output connection, but was final layer"
+        conv2d_in_conn = modules[0]
+        neuron = module_to_layer(modules[1], index + 1, 1, conv2d_in_conn.out_features)
+        if netwok.layers[-1]
+
+
+
+    raise ValueError("Unknown torch module", modules[0])
 
 
 def module_to_layer(
