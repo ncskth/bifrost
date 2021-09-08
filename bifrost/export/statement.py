@@ -20,21 +20,11 @@ class Statement:
         self.imports = imports
         self.preambles = preambles
 
-    def __add_lists(self, l0, l1):
-        #  NOTE: helper to deal with the default value of imports and preambles
-        #        being **tuples** which makes adding tricky
-        if isinstance(l1, tuple):
-            return l0
-        elif isinstance(l0, tuple):
-            return l1
-        else:
-            return l0 + l1
-
     def __add__(self, other):
         if isinstance(other, Statement):
             stmt = (f"{self.value}\n") if len(self.value) > 0 else ""
-            impos = self.__add_lists(self.imports, other.imports)
-            prems = self.__add_lists(self.preambles, other.preambles)
+            impos = list(self.imports) + list(other.imports)
+            prems = list(self.preambles) + list(other.preambles)
             return Statement(
                 f"{stmt}{other.value}",
                 imports=impos, preambles=prems
