@@ -1,3 +1,4 @@
+import bifrost.export.utils
 from bifrost.export.torch import TorchContext
 from typing import List
 import pytest
@@ -32,7 +33,7 @@ def test_lif_to_pynn():
     var = l.variable(0)
     torch_context = TorchContext({lkey: "0"})
     lif_p = population.export_neuron_type(l, torch_context)
-    struct = population.export_structure(l)
+    struct = bifrost.export.utils.export_structure(l)
     actual = population.export_layer_neuron(l, torch_context)
     # population blocks end in a line break
     expected = f'{var} = {SIM_NAME}.Population(10, {lif_p.value}, structure={struct.value}, label="{var}")\n'
@@ -50,7 +51,7 @@ def test_lif_neuron_to_pynn():
 
 def test_dict_to_pynn_parameters():
     d = {"test": 12, "tau_m": "value"}
-    actual = population.export_dict(d, join_str=',', n_spaces=0)
+    actual = bifrost.export.utils.export_dict(d, join_str=',', n_spaces=0)
     expected = "test=12,tau_m='value'"
     assert actual.value == expected
 
@@ -58,7 +59,7 @@ def test_dict_to_pynn_parameters():
 def test_dict_to_pynn_parameters_fail():
     d = {"test": 12, 2: "value"}
     with pytest.raises(ValueError):
-        actual = population.export_dict(d)
+        actual = bifrost.export.utils.export_dict(d)
 
 
 # def test_ann_to_graph():

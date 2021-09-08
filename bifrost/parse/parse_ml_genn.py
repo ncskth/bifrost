@@ -4,6 +4,7 @@ from bifrost.ir import (NeuronLayer, Cell, Connection)
 from bifrost.ir.network import Network
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
+from bifrost.ir.constants import (SynapseTypes, SynapseShapes, NeuronTypes)
 from bifrost.export.ml_genn import MLGeNNContext
 from typing import List
 from copy import copy
@@ -21,8 +22,10 @@ def to_synapse(layer_dict):
         syn_class = get_ir_class('DenseSynapse')
     else:
         raise NotImplementedError('Synapse Class not implemented')
-    syn_type = layer_dict['params']['cell'].pop('synapse_type', 'current')
-    syn_shape = layer_dict['params']['cell'].pop('synapse_shape', 'delta')
+    syn_type = layer_dict['params']['cell'].pop('synapse_type',
+                                                SynapseTypes.CURRENT)
+    syn_shape = layer_dict['params']['cell'].pop('synapse_shape',
+                                                 SynapseShapes.DELTA)
     return syn_class(syn_type, syn_shape)
 
 def to_cell(cell_params):

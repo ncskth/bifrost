@@ -1,22 +1,7 @@
-from bifrost.export.torch import TorchContext
-from bifrost.ir.output import OutputLayer
-from bifrost.ir.input import InputLayer
-from bifrost.ir.connection import (
-    AllToAllConnector, Connection, MatrixConnector, ConvolutionConnector,
-    DenseConnector, Connector
-)
-from bifrost.ir.cell import LIFCell, LICell
-from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.ir.synapse import (
-    Synapse, ConvolutionSynapse, DenseSynapse, StaticSynapse
-)
-from typing import Callable, List, Optional, Tuple
-from bifrost.ir.parameter import ParameterContext
-from bifrost.ir.network import Network
-from collections import OrderedDict
-from typing import Dict
+from typing import Callable, List, Optional, Tuple, Dict
 from copy import copy
 import numpy as np
+from collections import OrderedDict
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]=""
@@ -29,6 +14,23 @@ import pytorch_lightning as pl
 from torchinfo import summary
 from torchinfo.layer_info import LayerInfo
 import norse.torch as norse
+
+from bifrost.export.torch import TorchContext
+from bifrost.ir.output import OutputLayer
+from bifrost.ir.input import InputLayer
+from bifrost.ir.connection import (
+    AllToAllConnector, Connection, MatrixConnector, ConvolutionConnector,
+    DenseConnector, Connector
+)
+from bifrost.ir.cell import LIFCell, LICell
+from bifrost.ir.layer import NeuronLayer, Layer
+from bifrost.ir.synapse import (
+    Synapse, ConvolutionSynapse, DenseSynapse, StaticSynapse
+)
+
+from bifrost.ir.parameter import ParameterContext
+from bifrost.ir.network import Network
+from bifrost.ir.constants import SynapseTypes, SynapseShapes
 
 # todo: remove all the magic constants and move them to a common file
 
@@ -161,9 +163,9 @@ def __choose_cell(layer_info:LayerInfo):
 
 def __choose_synapse_shape(torch_params):
     if hasattr(torch_params, 'alpha'):
-        return 'alpha'
-    else:
-        return 'exponential'
+        return SynapseShapes.ALPHA
+    else:  # note: do we support delta?
+        return SynapseShapes.EXPONENTIAL
 
 def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
                     modules: Dict[int, LayerInfo]) -> Synapse:
@@ -173,13 +175,13 @@ def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
         name = modules[k]['class_name'].lower()
         if 'conv2d' in name:
             syn = ConvolutionSynapse()
-            continue
+            break
         elif 'dense' in name:
             syn = DenseSynapse()
-            continue
+            break
         elif 'linear' in name:
             syn = StaticSynapse()
-            continue
+            break
         elif 'avgpool2d' in name:
             continue
         # this should not be reached
@@ -199,16 +201,16 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[int],
         k = keys[conn_idx]
         name = modules[k]['class_name'].lower()
         pool = '' if pool_idx is None else str(pool_idx)
-        if name in 'conv2d':
+        if 'conv2d' in name:
             ctor = ConvolutionConnector(str(k), pooling_key=pool)
             continue
-        elif name in 'dense':
+        elif 'dense' in name:
             ctor = DenseConnector(str(k), pooling_key=pool)
             continue
-        elif name in 'linear':
+        elif 'linear' in name:
             ctor = MatrixConnector(str(k))
             continue
-        elif name in 'avgpool2d':
+        elif 'avgpool2d' in name:
             pool_idx = k
             continue
         # this should not be reached

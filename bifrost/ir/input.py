@@ -9,12 +9,15 @@ class InputSource:
 
 @dataclass
 class ImageDataset(InputSource):
-    load_command: str
-    num_samples: int
+    defines: Dict[int, str] = () # keys are order, thus ints
+    # : Dict[int, str]  # keys are order, thus ints
+    imports: List[str] = ()
+    num_samples: int = 1
+
 
 @dataclass
 class PoissonImageDataset(ImageDataset):
-    intensity_to_rate: float
+    pass
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):

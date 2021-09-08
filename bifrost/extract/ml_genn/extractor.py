@@ -7,6 +7,7 @@ from bifrost.extract.ml_genn.translations import (
     LAYER_TYPE_PARAM,
 )
 from bifrost.extract.utils import get_param
+
 from copy import deepcopy
 
 

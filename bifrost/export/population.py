@@ -1,34 +1,16 @@
-from typing import Any, Dict, List
+from bifrost.export.utils import export_list, export_structure
 from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput, DummyTestInputSource
+from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer, EthernetOutput, DummyTestOutputSink
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.cell import (LIFCell, LICell, IFCell)
+from bifrost.ir.constants import (SynapseShapes, SynapseTypes)
 from bifrost.export.statement import Statement
-from bifrost.export.pynn import SIM_NAME
+from bifrost.export.pynn import (SIM_NAME, PyNNSynapseShapes,
+                                 PyNNSynapseTypes, PyNNNeuronTypes)
+from bifrost.export.input import export_layer_input
+from bifrost.export.record import export_record
 
-def export_dict(d: Dict[Any, Any], join_str=",\n", n_spaces=0) -> Statement:
-    def _export_dict_key(key: Any) -> str:
-        if not isinstance(key, str):
-            raise ValueError("Parameter key must be a string", key)
-        return str(key)
-
-    def _export_dict_value(value: Any) -> str:
-        if isinstance(value, str):
-            return f"'{str(value)}'"
-        else:
-            return str(value)
-
-    pynn_dict = [f"{_export_dict_key(key)}={_export_dict_value(value)}"
-                 for key, value in d.items()]
-    spaces = " " * n_spaces
-    return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
-
-def export_list(var: str, l: List[str], join_str=", ", n_spaces=0):
-    spaces = " " * n_spaces
-    lst = (f"{join_str}{spaces}").join([f"\"{v}\"" for v in l])
-
-    return f"{var} = [{lst}]"
 
 def export_cell_params(layer: Layer, context: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 8) -> Statement:
@@ -59,6 +41,7 @@ def {func_name}():
     """
     return Statement(f"**({func_name}())", preambles=[f])
 
+
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
         return export_layer_spif(layer, context)
@@ -84,12 +67,13 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     for channel in range(layer.channels):
         var = f"{layer.variable(channel)}"
         par = param_template.format(var)
-        pop = [f"{var} = {SIM_NAME}.Population({par})"]
+        pop = f"{var} = {SIM_NAME}.Population({par})"
         recs = export_record(layer, channel)
-
-        statement += Statement("\n".join(pop+recs),
+        statement += Statement(pop,
                                imports=neuron.imports,
                                preambles=neuron.preambles)
+        if len(recs.value):
+            statement += recs
 
     # just add a break to separate populations for each layer
     statement += Statement("")
@@ -108,39 +92,6 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     return statement
 
 
-def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
-    source = layer.source
-    if isinstance(source, SpiNNakerSPIFInput):
-        spif_layer = source
-        statement = Statement(
-            [
-                f"""{layer.variable(channel)} = {SIM_NAME}.Population(None,{SIM_NAME}.external_devices.SPIFRetinaDevice(\
-base_key={channel},width={source.x},height={source.y},sub_width={source.x_sub},sub_height={source.y_sub},\
-input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"""
-                for channel in range(layer.channels)
-            ]
-        )
-    elif isinstance(source, DummyTestInputSource):
-        pop = [f"{layer.variable(0)} = DummyInputSource()"]
-        recs = export_record(layer, 0)
-        statement = Statement("\n".join(pop + recs))
-    else:
-        raise ValueError("Unknown input source", source)
-
-    statement += Statement("")  # add carriage return
-    return statement
-
-def export_record(layer: Layer, channel: int):
-    if len(layer.record) == 0:
-        return []
-    elif len(layer.record) == 1:
-        rs = f"\"{layer.record[0]}\""
-    else:
-        rs = ", ".join(f"\"{r}\"" for r in layer.record)
-        rs = f"[{rs}]"
-
-    return [f"{layer.variable(channel)}.record({rs})"]
-
 def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> Statement:
     sink = layer.sink
     if isinstance(sink, EthernetOutput):
@@ -153,6 +104,7 @@ def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> State
     statement += Statement("")  # add carriage return
     return statement
 
+
 def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 0) -> Statement:
     pynn_parameter_statement = export_cell_params(layer, ctx, join_str, spaces)
@@ -163,34 +115,32 @@ def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
         preambles=pynn_parameter_statement.preambles
     )
 
-def export_structure(layer):
-    ratio = float(layer.shape[1]) / layer.shape[0]
-    return Statement(f"Grid2D({ratio})",
-                     imports=['from pyNN.space import Grid2D'])
 
 # todo: this is PyNN, I guess we should move it somewhere else
 def get_pynn_cell_type(cell, synapse):
-    if isinstance(cell, (LICell, LIFCell)):
-        cell_type = 'IF'  # in PyNN this is missing the L for some #$%@ reason
+    if isinstance(cell, LICell):
+        cell_type = PyNNNeuronTypes.LI.value
+    elif isinstance(cell, LIFCell):
+        cell_type = PyNNNeuronTypes.LIF.value
     elif isinstance(cell, IFCell):
-        cell_type = 'NIF' #  as in Non-leaky Integrate and Fire
+        cell_type = PyNNNeuronTypes.NIF.value
     else:
         raise NotImplementedError("Neuron type not yet available")
 
-    if synapse.synapse_type == 'current':
-        syn_type = 'curr'
-    elif synapse.synapse_type == 'conductance':
-        syn_type = 'cond'
+    if synapse.synapse_type == SynapseTypes.CURRENT:
+        syn_type = PyNNSynapseTypes.CURRENT.value
+    elif synapse.synapse_type == SynapseTypes.CONDUCTANCE:
+        syn_type = SynapseTypes.CONDUCTANCE.value
     else:
         raise NotImplementedError(
                 f"Synapse type not yet available {synapse.synapse_type}")
 
-    if synapse.synapse_shape == 'exponential':
-        syn_shape = 'exp'
-    elif synapse.synapse_shape == 'alpha':
-        syn_shape = 'alpha'
-    elif synapse.synapse_shape == 'delta':
-        syn_shape = 'delta'
+    if synapse.synapse_shape == SynapseShapes.EXPONENTIAL:
+        syn_shape = PyNNSynapseShapes.EXPONENTIAL.value
+    elif synapse.synapse_shape == SynapseShapes.ALPHA:
+        syn_shape = PyNNSynapseShapes.ALPHA.value
+    elif synapse.synapse_shape == SynapseShapes.DELTA:
+        syn_shape = PyNNSynapseShapes.DELTA.value
     else:
         raise NotImplementedError(
                 f"Synapse 'shape' not yet available {synapse.synapse_shape}")

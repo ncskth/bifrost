@@ -1,12 +1,13 @@
 import numpy as np
 from bifrost.extract.utils import (size_from_shape)
 from bifrost.extract.ml_genn.utils import dense_weight_transform
+from bifrost.ir.constants import (SynapseTypes, SynapseShapes, NeuronTypes)
 
 cells = {
     'IFNeurons': {
         'target': 'IFCell',
-        'synapse_type': 'current',
-        'synapse_shape': 'delta',
+        'synapse_type': SynapseTypes.CURRENT,
+        'synapse_shape': SynapseShapes.DELTA,
         'check': ('neurons.__class__.__name__', ),
         'v_thresh': ('neurons.nrn.extra_global_params[Vthr].view', np.copy),
         'v_rest': ('neurons.nrn.vars[Vmem].view', np.copy)
