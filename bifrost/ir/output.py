@@ -19,6 +19,7 @@ class DummyTestOutputSink(OutputSink):
 @dataclass
 class OutputLayer(Layer):
     sink: OutputSink
+    source: Layer = None
     key: str = ""
     synapse: Synapse = StaticSynapse()
 

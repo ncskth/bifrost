@@ -84,11 +84,13 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
                       runtime=runtime)
 
     if output_layer is not None:
-        layers = network.layers + [output_layer]
-        out_conn = [Connection(pre=network.layers[-1], post=output_layer,
-                               connector=MatrixConnector("0"))]
-        conns = network.connections + out_conn
-        network = Network(layers=layers, connections=conns)
+        output_layer.source = network.layers[-1]
+        network.layers.append(output_layer)
+        # layers = network.layers + [output_layer]
+        # out_conn = [Connection(pre=network.layers[-1], post=output_layer,
+        #                        connector=MatrixConnector("0"))]
+        # conns = network.connections + out_conn
+        # network = Network(layers=layers, connections=conns)
         # todo: how to add something to the network_dictionary to connect
         #       the head of the network to the live output? We probably just
         #       need the 'weights' even if they are just fake

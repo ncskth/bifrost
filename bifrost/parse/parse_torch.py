@@ -71,11 +71,13 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     network = module_to_ir(modules=net_dict, network=default_network)
 
     if output_layer is not None:
-        layers = network.layers + [output_layer]
-        out_conn = [Connection(pre=network.layers[-1], post=output_layer,
-                               connector=MatrixConnector("0"))]
-        conns = network.connections + out_conn
-        network = Network(layers=layers, connections=conns)
+        output_layer.source = network.layers[-1]
+        # layers = network.layers + [output_layer]
+        # out_conn = [Connection(pre=network.layers[-1], post=output_layer,
+        #                        connector=MatrixConnector("0"))]
+        # conns = network.connections + out_conn
+        # network = Network(layers=layers, connections=conns)
+        network.layers.append(output_layer)
 
     return network
 
