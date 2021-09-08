@@ -25,16 +25,16 @@ def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Stateme
 
 def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    statement = Statement(
-        [
-            f"{layer.variable(channel)} = {SIM_NAME}.Population(None,"  \
-            f"{SIM_NAME}.external_devices.SPIFRetinaDevice("  \
-            f"base_key={channel},width={source.x},height={source.y},"  \
-            f"sub_width={source.x_sub},sub_height={source.y_sub},"  \
-            f"input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"
-            for channel in range(layer.channels)
-        ]
-    )
+    texts = [
+        f"{layer.variable(channel)} = {SIM_NAME}.Population(None,"  \
+        f"{SIM_NAME}.external_devices.SPIFRetinaDevice("  \
+        f"base_key={channel},width={source.x},height={source.y},"  \
+        f"sub_width={source.x_sub},sub_height={source.y_sub},"  \
+        f"input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"
+        for channel in range(layer.channels)
+    ]
+
+    statement = Statement(texts)
     return statement
 
 
