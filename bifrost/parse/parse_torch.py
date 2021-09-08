@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Tuple, Dict
+from typing import Callable, List, Optional, Tuple, Dict, Any
 from copy import copy
 import numpy as np
 from collections import OrderedDict
@@ -51,18 +51,22 @@ def module_to_list(model: torch.nn.Module, data_shape: tuple):
 
     return ld
 
-def torch_to_network(
-    model: torch.nn.Module, input_layer: InputLayer, output_layer: OutputLayer
-) -> Network:
+def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
+        output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
+
     if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
             raise ValueError("Unknown model type", type(model))
 
-    # Batch, Channels, Width, Height
-    # this has to be in (8, 3, 28, 28) BCXY format
+    runtime = config.get('runtime', -1.0)  # run forever if not specified
+    timestep = config.get("timestep", 1.0)
+
+    # Batch, Channels, Height, Width
+    # this has to be in (8, 3, 28, 28) BCYX format
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
     net_dict = module_to_list(model, input_shape)
 
-    default_network = Network(layers=[input_layer], connections=[])
+    default_network = Network(layers=[input_layer], connections=[],
+                              runtime=runtime, timestep=timestep)
 
     network = module_to_ir(modules=net_dict, network=default_network)
 

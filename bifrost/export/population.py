@@ -1,7 +1,8 @@
+from bifrost.export.output import export_layer_output
 from bifrost.export.utils import export_list, export_structure
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
-from bifrost.ir.output import OutputLayer, EthernetOutput, DummyTestOutputSink
+from bifrost.ir.output import OutputLayer
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from bifrost.ir.constants import (SynapseShapes, SynapseTypes)
@@ -92,19 +93,6 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     return statement
 
 
-def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> Statement:
-    sink = layer.sink
-    if isinstance(sink, EthernetOutput):
-        statement = Statement(f"""{layer.variable(0)} = EthernetOutputSink()""")
-    elif isinstance(sink, DummyTestOutputSink):
-        statement = Statement(f"""{layer.variable(0)} = DummyOutputSink()""")
-    else:
-        raise ValueError("Unknown input source", layer.source)
-
-    statement += Statement("")  # add carriage return
-    return statement
-
-
 def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 0) -> Statement:
     pynn_parameter_statement = export_cell_params(layer, ctx, join_str, spaces)
@@ -150,16 +138,3 @@ def get_pynn_cell_type(cell, synapse):
 
 
 
-# def output_ethernet(layer: )
-# create python injector
-# 2  def send_spike(label, sender):
-# 3 sender.send_spike(label, 0, send_full_keys=True)
-# 4
-# 5 # set up python injector connection
-# 6  live_spikes_connection =
-# 7      sim.external_devices.SpynnakerLiveSpikesConnection(
-# 8          send_labels=[“spike_sender”])
-# 9
-# 10 # register python injector with injector connection
-# 11 live_spikes_connection.add_start_callback(“spike_sender”, send_spike)
-# activate_live_output_for(receiver, database_notify_port_num=19996)
