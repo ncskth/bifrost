@@ -1,8 +1,8 @@
-from norse.torch.functional.lif import LIFParameters
 from bifrost.export.torch import TorchContext
 from bifrost.ir.connection import *
 from bifrost.export.connection import *
 from bifrost.export.pynn import SIM_NAME
+from bifrost.parse.remove_blank import remove_blank as rb
 
 class MockContext(ParameterContext):
     def weights(self, layer: str, channel: int) -> str:
@@ -30,8 +30,8 @@ def test_matrix_connection_to_pynn():
     var = 'c_x_0__to__y_0'
     actual = export_connection(c, torch_context, join_str=", ", spaces=0)
     # projections end in a line break
-    expected = f"{var} = {SIM_NAME}.Projection(\nl_x_1_0, l_y_1_0, " \
-               f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())\n" \
-               f"{var}.set(weight=_params['layer.weights']['weights'][0, 0])\n"
-    assert str(actual) == expected
+    expected = f"{var} = {SIM_NAME}.Projection(l_x_1_[0], l_y_1_[0], " \
+               f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())" \
+               f"{var}.set(weight=_params[\"layer.weights\"][\"weight\"][0, 0])"
+    assert rb(str(actual)) == rb(expected)
     assert len(actual.imports) == 0

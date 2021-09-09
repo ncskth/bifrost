@@ -1,6 +1,9 @@
 import numpy as np
 from bifrost.extract.utils import (size_from_shape)
-from bifrost.extract.ml_genn.utils import dense_weight_transform
+from bifrost.extract.ml_genn.utils import (
+    dense_weight_transform, kernel_weight_transform,
+    decode_conv_padding, decode_pool_padding
+)
 from bifrost.ir.constants import (SynapseTypes, SynapseShapes, NeuronTypes)
 
 cells = {
@@ -31,9 +34,9 @@ layers = {
             'size': ('shape[:2]', size_from_shape),
             'shape': ('shape', ),
             'n_channels': ('upstream_synapses[0].filters', ),
-            'weights': ('upstream_synapses[0].weights', np.copy),
+            'weights': ('upstream_synapses[0].weights', kernel_weight_transform),
             'strides': ('upstream_synapses[0].conv_strides', ),
-            'padding': ('upstream_synapses[0].conv_padding', ),
+            'padding': ('upstream_synapses[0]', decode_conv_padding),
         },
         'AvePool2DConv2DSynapses': {
             'target': 'Conv2DLayer',
@@ -42,17 +45,19 @@ layers = {
             'size': ('shape[:2]', size_from_shape),
             'shape': ('shape', ),
             'n_channels': ('upstream_synapses[0].filters', ),
-            'weights': ('upstream_synapses[0].weights', np.copy),
+            'weights': ('upstream_synapses[0].weights', kernel_weight_transform),
             'strides': ('upstream_synapses[0].conv_strides', ),
             'pool_shape': ('upstream_synapses[0].pool_size', ),
             'pool_stride': ('upstream_synapses[0].pool_strides', ),
-            'padding': ('upstream_synapses[0].conv_padding', ),
+            'pool_padding': ('upstream_synapses[0]', decode_pool_padding),
+            'padding': ('upstream_synapses[0]', decode_conv_padding),
         },
         'AvePool2DDenseSynapses': {
             'target': 'PoolDenseLayer',
             'check': ('upstream_synapses[0].__class__.__name__', ),
             'pool_shape': ('upstream_synapses[0].pool_size', ),
             'pool_stride': ('upstream_synapses[0].pool_strides', ),
+            'pool_padding': ('upstream_synapses[0]', decode_pool_padding),
             'size': ('shape[0]', ),
             'weights': ('upstream_synapses[0]', dense_weight_transform),
         },

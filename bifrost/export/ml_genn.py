@@ -34,10 +34,13 @@ _param_map = {
         return f'_params["{layer}"]["params"]["weights"][{channel_in}, {channel_out}]'
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
-        return f'_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]'
+        return f'np.fliplr(np.flipud(_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]))'
 
     def conv2d_strides(self, layer: str) -> Output:
         return f'_params["{layer}"]["params"]["strides"]'
+
+    def conv2d_padding(self, layer: str) -> Output:
+        return f'_params["{layer}"]["params"]["padding"]'
 
     def conv2d_pooling(self, layer: str) -> Output:
         area = f'_params["{layer}"]["params"].get("pool_shape", None)'
@@ -51,11 +54,12 @@ _param_map = {
         return {}
 
     def neuron_parameter(self, layer: str, parameter_name: str) -> str:
-        return f'_param_map[{parameter_name}]'\
-               f'(_params["{self.layer_map[layer]}"]["params"]["cell"][{parameter_name}])'
+        return (f'_param_map[{parameter_name}]'
+                f'(_params["{self.layer_map[layer]}"]["params"]["cell"][{parameter_name}])')
 
     def parameter_names(self, cell: Cell) -> List[str]:
         if isinstance(cell, IFCell):
             return self.if_parameters
         else:
             raise ValueError("Unknown neuron type ", cell)
+

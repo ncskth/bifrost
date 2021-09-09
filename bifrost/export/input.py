@@ -42,7 +42,7 @@ def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statemen
 
 def export_dummy_test_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     pop = [f"{layer.variable('')} = {{0: DummyInputSource()}}"]
-    recs = export_record(layer, 0)
+    recs = export_record(layer)
     stt = Statement(pop)
     if len(recs.value):
         stt += recs

@@ -5,6 +5,17 @@ def size_from_shape(shape):
     return int(np.prod(shape))
 
 
+def try_reduce_param(param):
+    try:
+        if np.allclose(param[:1], param):
+            return np.asscalar(param[0])
+    except Exception as e:
+        if np.ndim(param) == 0:
+            return np.asscalar(param)
+    else:
+        return param
+
+
 def get_param(obj, trans, try_reduce=False):
     o = obj
     param_chain = trans[0].split('.')
@@ -34,18 +45,7 @@ def get_param(obj, trans, try_reduce=False):
         o = trans[1](o)
 
     if try_reduce:
-        return try_reduce(o)
+        return try_reduce_param(o)
 
     return o
-
-
-def try_reduce(obj):
-    try:
-        if np.allclose(obj[:1], obj):
-            return np.asscalar(obj[0])
-    except Exception as e:
-        if np.ndim(obj) == 0:
-            return np.asscalar(obj)
-    else:
-        return obj
 
