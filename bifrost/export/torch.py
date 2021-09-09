@@ -38,27 +38,28 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params['{layer}']['weight'][{channel_out}, {channel_in}]"
+        return f"_params[\"{layer}\"][\"weight\"][{channel_out}, {channel_in}]"
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params['{layer}']['weight'][{channel_out}, {channel_in}]"
+        return f"_params[\"{layer}\"][\"weight\"][{channel_out}, {channel_in}]"
 
     def conv2d_strides(self, layer: str) -> str:
-        return f"_params['{layer}']['stride']"
+        return f"_params[\"{layer}\"][\"stride\"]"
 
     def conv2d_padding(self, layer: str) -> str:
-        return f"_params['{layer}']['padding']"
+        return f"_params[\"{layer}\"][\"padding\"]"
 
     def conv2d_pooling(self, layer: str) -> str:
-        return f"_params['{layer}']['kernel_size']", f"_params['{layer}']['stride']"
+        return (f"_params[\"{layer}\"].get(\"kernel_size\", None)", \
+                f"_params[\"{layer}\"].get(\"stride\", None)")
 
     def neuron_parameter_base(self, layer:str) -> str:
         return f"_param_map[{{}}]"\
-               f"(_params['{self.layer_map[layer]}'][{{}}])"
+               f"(_params[\"{self.layer_map[layer]}\"][{{}}])"
 
     def neuron_parameter(self, layer: str, parameter_name: str) -> str:
         return f"_param_map[{parameter_name}]"\
-               f"(_params['{self.layer_map[layer]}'][{parameter_name}])"
+               f"(_params[\"{self.layer_map[layer]}\"][{parameter_name}])"
 
     def parameter_names(self, cell: Cell) -> List[str]:
         if isinstance(cell, LIFCell):

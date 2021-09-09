@@ -25,21 +25,23 @@ def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Stateme
 
 def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    texts = [
-        (f"{layer.variable(channel)} = {SIM_NAME}.Population(None,"  
-         f"{SIM_NAME}.external_devices.SPIFRetinaDevice("  
-         f"base_key={channel},width={source.x},height={source.y},"  
-         f"sub_width={source.x_sub},sub_height={source.y_sub},"  
-         f"input_x_shift={source.x_shift},input_y_shift={source.y_shift}))")
-        for channel in range(layer.channels)
-    ]
+    var = f"{layer.variable('')}"
+    var_sp = " " * (len(var) + 4)
+    tab = " " * 4
+    texts = (f"{var} = {{channel: {SIM_NAME}.Population(None, \n"  
+         f"{var_sp}{tab}{SIM_NAME}.external_devices.SPIFRetinaDevice(\n"  
+         f"{var_sp}{tab}{tab}base_key=channel,width={source.x},height={source.y},\n"  
+         f"{var_sp}{tab}{tab}sub_width={source.x_sub},sub_height={source.y_sub},\n"
+         f"{var_sp}{tab}{tab}input_x_shift={source.x_shift},input_y_shift={source.y_shift}))\n"
+         f"{var_sp}for channel in range({layer.channels})}}"
+    )
 
     statement = Statement(texts)
     return statement
 
 
 def export_dummy_test_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
-    pop = [f"{layer.variable(0)} = DummyInputSource()"]
+    pop = [f"{layer.variable('')} = {{0: DummyInputSource()}}"]
     recs = export_record(layer, 0)
     stt = Statement(pop)
     if len(recs.value):

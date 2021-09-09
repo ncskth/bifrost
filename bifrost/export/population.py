@@ -57,24 +57,28 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
 
 
 def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
-                        param_join_str=", ", pop_join_str=",\n") -> Statement:
+                        param_join_str=", \n", pop_join_str=",\n") -> Statement:
+    var = layer.variable('')
+    var_sp = " " * (len(var) + 4)
+    tab = " " * 4
     neuron = export_neuron_type(layer, context, join_str=", ", spaces=0)
     structure = export_structure(layer)
-    param_template = param_join_str.join([
-            f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
-            "label=\"{}\""])
+    label_template = f"{layer.variable('')}{{channel}}"
 
-    statement = Statement()
-    for channel in range(layer.channels):
-        var = f"{layer.variable(channel)}"
-        par = param_template.format(var)
-        pop = f"{var} = {SIM_NAME}.Population({par})"
-        recs = export_record(layer, channel)
-        statement += Statement(pop,
-                               imports=neuron.imports,
-                               preambles=neuron.preambles)
-        if len(recs.value):
-            statement += recs
+    param_template = f"{param_join_str}{var_sp}{tab}".join([
+            f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
+            f"label=f\"{label_template}\""])
+
+    pop = (f"{var} = {{channel: {SIM_NAME}.Population({param_template})\n"
+           f"{var_sp}for channel in range({layer.channels})}}"
+           )
+
+    statement = Statement(pop,
+                          imports=neuron.imports,
+                          preambles=neuron.preambles)
+
+    if len(layer.record):
+        statement += export_record(layer)
 
     # just add a break to separate populations for each layer
     statement += Statement("")

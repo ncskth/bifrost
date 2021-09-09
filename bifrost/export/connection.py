@@ -29,8 +29,8 @@ def export_connection(connection: Connection, context: ParameterContext[str],
             synapse = export_synapse(connection)
             projection = [
                 f"{var} = {SIM_NAME}.Projection(\n"
-                f"{sp}{connection.pre.variable(ch_in)}",
-                f"{connection.post.variable(ch_out)}",
+                f"{sp}{connection.pre.variable('')}[{ch_in}]",
+                f"{connection.post.variable('')}[{ch_out}]",
                 f"{connector.value}",
                 f"{synapse.value})",
             ]
@@ -91,7 +91,7 @@ def export_conv(connection: Connection[Layer, Layer],
                 conn.weights_key, channel_in, channel_out)
     strides = context.conv2d_strides(conn.weights_key)
     pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
-                               if len(conn.pooling_key) else ('None', 'None'))
+                               if len(conn.pooling_key) else (None, None))
     padding = context.conv2d_padding(conn.weights_key)
     stt = [f"{SIM_NAME}.ConvolutionConnector({weights}",
         f"strides={strides}",
