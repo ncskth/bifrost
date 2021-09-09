@@ -1,7 +1,9 @@
 import numpy as np
 
+
 def size_from_shape(shape):
     return int(np.prod(shape))
+
 
 def get_param(obj, trans, try_reduce=False):
     o = obj
@@ -32,11 +34,18 @@ def get_param(obj, trans, try_reduce=False):
         o = trans[1](o)
 
     if try_reduce:
-        try:
-            if np.allclose(o[:1], o[1:]):
-                o = o[0]
-        except:  # try to
-            pass
+        return try_reduce(o)
 
     return o
+
+
+def try_reduce(obj):
+    try:
+        if np.allclose(obj[:1], obj):
+            return np.asscalar(obj[0])
+    except Exception as e:
+        if np.ndim(obj) == 0:
+            return np.asscalar(obj)
+    else:
+        return obj
 

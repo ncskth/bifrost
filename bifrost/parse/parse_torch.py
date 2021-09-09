@@ -31,6 +31,7 @@ from bifrost.ir.synapse import (
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 from bifrost.ir.constants import SynapseTypes, SynapseShapes
+from bifrost.extract.utils import try_reduce
 
 # todo: remove all the magic constants and move them to a common file
 
@@ -93,11 +94,11 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
         name = net_dict[k]['class_name'].lower()
         if name in ('avgpool2d', 'conv2d'):
             for name in vars(module):
-                if name[0] == '_':
+                if name[0] == '_' or 'module' in name:
                     continue
                 val = getattr(module, name)
                 if isinstance(val, Tensor):
-                    val = val.detach().numpy()
+                    val = try_reduce(val.detach().numpy())
 
                 net_dict[k][name] = val
 
@@ -113,7 +114,10 @@ def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterC
             for name, val in zip(params._fields, params):
                 if not isinstance(val, Tensor):
                     continue
-                net_dict[k][name] = val.detach().numpy()
+                net_dict[k][name] = try_reduce(val.detach().numpy())
+
+        del net_dict[k]['module']
+        del net_dict[k]['parent_info']
 
     layer_map = {
         str(l): l.key

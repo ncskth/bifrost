@@ -8,11 +8,19 @@ from bifrost.ir.parameter import ParameterContext
 class TorchContext(ParameterContext[str]):
     imports = ["import numpy as np", "import sys"]
     preamble = """
-_params = np.load(sys.argv[1], allow_pickle=True)
+def to_dict(np_file):
+    d = {}
+    for k in np_file.keys():
+        try:
+            d[k] = np_file[k].item()
+        except:
+            d[k] = np_file[k]
+    return d 
+
+_params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
 _param_map = {
     "tau_mem_inv": lambda v: ("tau_m", 1.0/v),
-    "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/v),
     "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/v),
     "v_reset": lambda v: ("v_reset", v),
     "v_th": lambda v: ("v_thresh", v),
@@ -22,7 +30,6 @@ _param_map = {
     lif_parameters = [
         "tau_mem_inv",
         "tau_syn_inv",
-        "tau_syn_inv",
         "v_reset",
         "v_th",
     ]
@@ -31,13 +38,16 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params['{layer}']['weights'][{channel_in}, {channel_out}]"
+        return f"_params['{layer}']['weight'][{channel_out}, {channel_in}]"
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params['{layer}']['weights'][{channel_in}, {channel_out}]"
+        return f"_params['{layer}']['weight'][{channel_out}, {channel_in}]"
 
     def conv2d_strides(self, layer: str) -> str:
         return f"_params['{layer}']['stride']"
+
+    def conv2d_padding(self, layer: str) -> str:
+        return f"_params['{layer}']['padding']"
 
     def conv2d_pooling(self, layer: str) -> str:
         return f"_params['{layer}']['kernel_size']", f"_params['{layer}']['stride']"
@@ -55,3 +65,5 @@ _param_map = {
             return self.lif_parameters
         else:
             raise ValueError("Unknown neuron type ", cell)
+
+

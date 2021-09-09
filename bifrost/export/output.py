@@ -17,16 +17,24 @@ def export_layer_output(layer: OutputLayer, ctx: ParameterContext[str]) -> State
 
 def export_ethernet_output(layer: OutputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    vars = ", ".join(
+    labels_var = f"out_labels_{source.variable('')}"
+    vars = ", \n    ".join(
         [f'"{source.variable(channel)}"' for channel in range(source.channels)])
-    live_rec = f"live_spikes_connection_receive = " \
-               f"{SIM_NAME}.external_devices.SpynnakerLiveSpikesConnection(" \
-               f"receive_labels=[{vars}]," \
-               f"local_port=None, send_labels=None)"
-    live_out = [f"sim.external_devices.activate_live_output_for("\
-                f"{source.variable(channel)}," \
-                f"database_notify_port_num=live_spikes_connection_receive.local_port)"
-                for channel in range(source.channels)]
+    live_rec = (
+        f"{labels_var} = [{vars}\n]\n" 
+        f"live_spikes_connection_receive = " 
+        f"{SIM_NAME}.external_devices.SpynnakerLiveSpikesConnection(" 
+        f"receive_labels={labels_var}," 
+        f"local_port=None, send_labels=None)"
+    )
+    live_out = [
+        (
+            f"{SIM_NAME}.external_devices.activate_live_output_for("
+            f"{source.variable(channel)}," 
+            f"database_notify_port_num=live_spikes_connection_receive.local_port)"
+        )
+        for channel in range(source.channels)
+    ]
 
     return Statement([live_rec] + live_out)
 

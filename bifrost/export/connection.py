@@ -92,13 +92,15 @@ def export_conv(connection: Connection[Layer, Layer],
     strides = context.conv2d_strides(conn.weights_key)
     pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
                                if len(conn.pooling_key) else ('None', 'None'))
-    # todo: padding here needs to be somewhat decoded but I'm not sure how to
-    return ConnectionStatement(
-        f"{SIM_NAME}.ConvolutionConnector({weights}, \n"
-        f"{sp}strides={strides}, \n"
-        f"{sp}pool_shape={pool_shape}, \n"
-        f"{sp}pool_stride={pool_stride})",
-    )
+    padding = context.conv2d_padding(conn.weights_key)
+    stt = [f"{SIM_NAME}.ConvolutionConnector({weights}",
+        f"strides={strides}",
+        f"pool_shape={pool_shape}",
+        f"pool_stride={pool_stride}",
+        f"padding={padding})"
+    ]
+    return ConnectionStatement(f",\n{sp}".join(stt))
+
 
 def export_dense(connection: Connection[Layer, Layer],
                  channel_in: int, channel_out: int,

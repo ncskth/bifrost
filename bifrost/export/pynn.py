@@ -1,6 +1,6 @@
 from enum import Enum
 
-SIM_NAME = 'spynn'
+SIM_NAME = "spynn"
 
 pynn_imports = [f"import spynnaker8 as {SIM_NAME}"]
 

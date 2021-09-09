@@ -26,11 +26,11 @@ def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Stateme
 def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
     texts = [
-        f"{layer.variable(channel)} = {SIM_NAME}.Population(None,"  \
-        f"{SIM_NAME}.external_devices.SPIFRetinaDevice("  \
-        f"base_key={channel},width={source.x},height={source.y},"  \
-        f"sub_width={source.x_sub},sub_height={source.y_sub},"  \
-        f"input_x_shift={source.x_shift},input_y_shift={source.y_shift}))"
+        (f"{layer.variable(channel)} = {SIM_NAME}.Population(None,"  
+         f"{SIM_NAME}.external_devices.SPIFRetinaDevice("  
+         f"base_key={channel},width={source.x},height={source.y},"  
+         f"sub_width={source.x_sub},sub_height={source.y_sub},"  
+         f"input_x_shift={source.x_shift},input_y_shift={source.y_shift}))")
         for channel in range(layer.channels)
     ]
 
@@ -57,11 +57,11 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     ]
     struct = export_structure(layer.source) # in this case the struct has the shape
     statement = Statement([
-            f"{layer.variable(channel)} = {SIM_NAME}.Population({layer.size}, \n" \
-            f"    {SIM_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-            f"        **{param_def_name}{layer.variable(channel)}()), \n"
-            f"    structure={struct.value}, \n"
-            f"    label=\"{layer.variable(channel)}\") \n"
+            (f"{layer.variable(channel)} = {SIM_NAME}.Population({layer.size}, \n"
+             f"    {SIM_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
+             f"        **{param_def_name}{layer.variable(channel)}()), \n"
+             f"    structure={struct.value}, \n"
+             f"    label=\"{layer.variable(channel)}\") \n")
             for channel in range(layer.channels)
         ],
         imports=struct.imports,
