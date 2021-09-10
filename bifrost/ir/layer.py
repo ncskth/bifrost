@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from bifrost.ir.cell import Cell, LIFCell
 from bifrost.ir.synapse import Synapse, StaticSynapse
 from typing import Dict, List, Set
+from bifrost.ir.sanitize import sanitize
 
 @dataclass
 class Layer:
@@ -11,10 +12,10 @@ class Layer:
     channels: int
 
     def variable(self, channel):
-        return f"l_{self.name}_{self.size}_{channel}"
+        return sanitize(f"l_{self.name}_{self.size}_{channel}")
 
     def __repr__(self):
-        return f"l_{self.name}_{self.size}_{self.channels}"
+        return sanitize(f"l_{self.name}_{self.size}_{self.channels}")
 
     def __str__(self):
         return self.__repr__()

@@ -107,19 +107,8 @@ def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterConte
     for idx, layer in enumerate(net.layers):
         if isinstance(layer, InputLayer):
             continue
-
         map_key = str(layer)
-        mod = net_dict[layer.key]
-        print(map_key)
-        if 'SequentialState' in str(info['parent_info']):
-            parent = info['parent_info'].var_name
-            name = f"{parent}.{info['var_name']}"
-            path = f"\"{info['parent_info']['var_name']}\"][\"\""
-    # layer_map = {
-    #     str(l): l.key
-    #     for l in net.layers
-    #     if not (isinstance(l, InputLayer))
-    # }
+        layer_map[map_key] = layer.key
 
     return TorchContext(layer_map), {'state_dict': state_dict}
 

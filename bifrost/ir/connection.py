@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
+from bifrost.ir.sanitize import sanitize
 
 
 class Connector:
@@ -39,4 +40,4 @@ class Connection(Generic[From, To]):
     connector: Connector
 
     def variable(self, channel_in: int, channel_out: int) -> str:
-        return f"c_{self.pre.name}_{channel_in}__to__{self.post.name}_{channel_out}"
+        return sanitize(f"c_{self.pre.name}_{channel_in}__to__{self.post.name}_{channel_out}")
