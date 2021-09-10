@@ -6,18 +6,11 @@ from bifrost.ir.parameter import ParameterContext
 
 
 class TorchContext(ParameterContext[str]):
-    imports = ["import numpy as np", "import sys"]
+    imports = ["import numpy as np", "import torch", "import sys"]
     preamble = """
-def to_dict(np_file):
-    d = {}
-    for k in np_file.keys():
-        try:
-            d[k] = np_file[k].item()
-        except:
-            d[k] = np_file[k]
-    return d 
+_checkpoint = torch.load(sys.argv[1])
+_params = _checkpoint['state_dict']
 
-_params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
 _param_map = {
     "tau_mem_inv": lambda v: ("tau_m", 1.0/v),

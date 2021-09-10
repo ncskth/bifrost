@@ -11,8 +11,6 @@ torch.device("cpu")
 from torch import Tensor
 
 import pytorch_lightning as pl
-from torchinfo import summary
-from torchinfo.layer_info import LayerInfo
 import norse.torch as norse
 
 from bifrost.export.torch import TorchContext
@@ -37,21 +35,6 @@ from bifrost.extract.utils import try_reduce_param
 
 Continuation = Callable[[Network], Network]
 
-def layerinfo_to_dict(layerinfo: LayerInfo) -> Dict:
-    return {k: getattr(layerinfo, k) for k in vars(layerinfo)}
-
-
-def module_to_list(model: torch.nn.Module, data_shape: tuple):
-    s = summary(model, data_shape, verbose=0)
-
-    ld = OrderedDict({f"{i:03d}": layerinfo_to_dict(l)
-                      for i, l in enumerate(s.summary_list)
-                      if not (isinstance(l.module, torch.nn.BatchNorm2d) or
-                              isinstance(l.module, norse.SequentialState) or
-                              i == 0)})
-
-    return ld
-
 def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
 
@@ -64,7 +47,7 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     # Batch, Channels, Height, Width
     # this has to be in (8, 3, 28, 28) BCYX format
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
-    net_dict = module_to_list(model, input_shape)
+    net_dict = dict(model.named_modules())
 
     default_network = Network(layers=[input_layer], connections=[],
                               runtime=runtime, timestep=timestep)
@@ -83,66 +66,58 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     return network
 
 
-def torch_to_context(net: Network, modules: List[torch.nn.Module]) -> ParameterContext[str]:
+def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterContext[str]:
     input_layer = net.layers[0] # assuming the first layer is of input type
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
-    net_dict = module_to_list(modules, input_shape)
+    net_dict = module_to_list(torch_net, input_shape)
+    state_dict = torch_net.state_dict()
+    weight_keys = set(['.'.join(k.split('.')[:-1]) for k in state_dict.keys()])
+
     keys = list(net_dict.keys())
+    layer_map = {}
     last_stride_idx = 0
-    for idx, k in enumerate(net_dict):
-        module = net_dict[k]['module']
-        name = net_dict[k]['class_name'].lower()
-        if name in ('avgpool2d', 'conv2d'):
-            for name in vars(module):
-                if name[0] == '_' or 'module' in name:
-                    continue
-                val = getattr(module, name)
-                if isinstance(val, Tensor):
-                    val = try_reduce_param(val.detach().numpy())
-
-                net_dict[k][name] = val
-
-            params = module._parameters
-            for p, val in params.items():
-                if isinstance(val, Tensor):
-                    val = val.detach().numpy()
-
-                net_dict[k][p] = val
-
-        if name in ('lifcell', 'licell'):  # parameters for LI or LIF neurons
-            params = module.p
-            for name, val in zip(params._fields, params):
-                if not isinstance(val, Tensor):
-                    continue
-                net_dict[k][name] = try_reduce_param(val.detach().numpy())
-
-        del net_dict[k]['module']
-        del net_dict[k]['parent_info']
-
-    layer_map = {
-        str(l): l.key
-        for l in net.layers
-        if not (isinstance(l, InputLayer))
-    }
-
-    return TorchContext(layer_map), net_dict
 
 
-def module_to_ir(modules: Dict[int, LayerInfo], network: Network) -> Network:
+    for idx, layer in enumerate(net.layers):
+        if isinstance(layer, InputLayer):
+            continue
+
+        map_key = str(layer)
+        info = net_dict[layer.key]
+        print(map_key)
+        if 'SequentialState' in str(info['parent_info']):
+            parent = info['parent_info'].var_name
+            name = f"{parent}.{info['var_name']}"
+            path = f"\"{info['parent_info']['var_name']}\"][\"\""
+    # layer_map = {
+    #     str(l): l.key
+    #     for l in net.layers
+    #     if not (isinstance(l, InputLayer))
+    # }
+
+    return TorchContext(layer_map), {'state_dict': state_dict}
+
+
+def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Network:
     layer_map = {}
     layers = network.layers
     connections = network.connections
     keys = list(modules.keys())
     last_neuron_idx = - 1
     for idx, k in enumerate(keys):
-        layer_info = modules[k]
-        name = layer_info['class_name'].lower()
+        if (k in ('', 'loss_fn') or
+            isinstance(modules[k], norse.SequentialState)):
+            continue
+
+        mod = modules[k]
+        name = mod.__class__.__name__.lower()
         if name in ['conv2d', 'avgpool2d', 'linear']:
             continue
 
         if name in ['licell', 'lifcell']:
+
             size = int(np.prod(layer_info['output_size'][-2:]))
-            channels = layer_info['output_size'][1]
+            channels = mod.output_size[1]
             cell = __choose_cell(layer_info)
 
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
@@ -163,8 +138,8 @@ def module_to_ir(modules: Dict[int, LayerInfo], network: Network) -> Network:
     return network
 
 
-def __choose_cell(layer_info:LayerInfo):
-    name = layer_info['class_name']
+def __choose_cell(module: torch.nn.Module):
+    name = module.__class__.__name__.lower()
     if 'licell' in name:
         return LICell()
     else:
@@ -178,11 +153,11 @@ def __choose_synapse_shape(torch_params):
         return SynapseShapes.EXPONENTIAL
 
 def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
-                    modules: Dict[int, LayerInfo]) -> Synapse:
+                    modules: Dict[int, torch.nn.Module]) -> Synapse:
     syn = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        name = modules[k]['class_name'].lower()
+        name = modules[k].__class__.__name__.lower()
         if 'conv2d' in name:
             syn = ConvolutionSynapse()
             break
@@ -197,19 +172,19 @@ def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
         # this should not be reached
         raise ValueError("Unknown connector", name)
 
-    layer_info = modules[keys[end_idx]]
-    syn.synapse_shape = __choose_synapse_shape(layer_info['module'].p)
+    mod = modules[keys[end_idx]]
+    syn.synapse_shape = __choose_synapse_shape(mod.p)
     # note: seems we only support current synapse types as of now (7/9/21)
     return syn
 
 
 def __get_connector(start_idx: int, end_idx: int, keys: List[int],
-                    modules: Dict[int, LayerInfo]) -> Connector:
+                    modules: Dict[int, torch.nn.Module]) -> Connector:
     pool_idx = None
     ctor = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        name = modules[k]['class_name'].lower()
+        name = modules[k].__class__.__name__.lower()
         pool = '' if pool_idx is None else str(pool_idx)
         if 'conv2d' in name:
             ctor = ConvolutionConnector(str(k), pooling_key=pool)
