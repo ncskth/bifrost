@@ -11,7 +11,6 @@ class TorchContext(ParameterContext[str]):
 _checkpoint = torch.load(sys.argv[1])
 _params = _checkpoint['state_dict']
 
-
 _param_map = {
     "tau_mem_inv": lambda v: ("tau_m", 1.0/v),
     "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/v),

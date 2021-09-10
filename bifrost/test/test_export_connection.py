@@ -32,6 +32,6 @@ def test_matrix_connection_to_pynn():
     # projections end in a line break
     expected = f"{var} = {SIM_NAME}.Projection(l_x_1_[0], l_y_1_[0], " \
                f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())" \
-               f"{var}.set(weight=_params[\"layer.weights\"][\"weight\"][0, 0])"
+               f"{var}.set(weight=_params[\"layer.weights.weight\"][0, 0])"
     assert rb(str(actual)) == rb(expected)
     assert len(actual.imports) == 0
