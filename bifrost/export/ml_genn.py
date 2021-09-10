@@ -19,8 +19,8 @@ def to_dict(np_file):
 _params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
 _param_map = {
-    "v_rest": (lambda v: "v_rest", v),
-    "v_thresh": (lambda v: "v_thresh", v),
+    "v_rest": lambda v: ("v_rest", v),
+    "v_thresh": lambda v: ("v_thresh", v),
 }
     """
 
