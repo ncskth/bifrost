@@ -11,7 +11,7 @@ def try_reduce_param(param):
             return np.asscalar(param[0])
     except Exception as e:
         if np.ndim(param) == 0:
-            return np.asscalar(param)
+            return param.item()
     else:
         return param
 

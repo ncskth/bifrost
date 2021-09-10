@@ -13,7 +13,7 @@ class LIFCell(Cell):
     pass
 
 @dataclass
-class LICell(LIFCell):
+class LICell(Cell):
     pass
 
 @dataclass

@@ -152,8 +152,8 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
 
 
 def __choose_cell(module: torch.nn.Module):
-    name = module.__class__.__name__.lower()
-    if 'licell' in name:
+    name = module.p.__class__.__name__.lower()
+    if 'liparameters' in name:
         return LICell()
     else:
         return LIFCell()  # default
