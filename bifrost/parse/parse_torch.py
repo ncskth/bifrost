@@ -35,6 +35,42 @@ from bifrost.extract.utils import try_reduce_param
 
 Continuation = Callable[[Network], Network]
 
+dont_parse_classes = (
+    norse.SequentialState,
+    torch.nn.modules.loss._Loss, # loss functions
+    torch.nn.modules.batchnorm._NormBase # normalizers
+)
+def trimed_named_modules(torch_net: torch.nn.Module):
+    def _invalid(k, modules):
+        return (isinstance(modules[k], dont_parse_classes) or k == '')
+
+    modules = dict(torch_net.named_modules()) # this expands inner SequentialStates
+    remove_these =  [k for k in modules.keys() if _invalid(k, modules)]
+    for k in remove_these:
+        del modules[k]
+
+    return modules
+
+
+def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[str, torch.Size]:
+    input_layer = network.layers[0] # assuming the first layer is of input type
+    # Batch size, Number of Channels, Height, Width
+    # this has to be in [e.g. (8, 3, 28, 28)] BCYX format
+    input_shape = (1, input_layer.channels, *input_layer.source.shape)
+
+    shapes = {}
+    x = torch.randn(input_shape)
+    for i, k in enumerate(modules):
+        print(k)
+        x = modules[k](x)
+
+        # first is output of previous layer, second is the state
+        if isinstance(x, tuple):
+            x = x[0]
+        shapes[k] = x.data.shape
+    return shapes
+
+
 def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
 
@@ -44,10 +80,7 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     runtime = config.get('runtime', -1.0)  # run forever if not specified
     timestep = config.get("timestep", 1.0)
 
-    # Batch, Channels, Height, Width
-    # this has to be in (8, 3, 28, 28) BCYX format
-    input_shape = (1, input_layer.channels, *input_layer.source.shape)
-    net_dict = dict(model.named_modules())
+    net_dict = trimed_named_modules(model)
 
     default_network = Network(layers=[input_layer], connections=[],
                               runtime=runtime, timestep=timestep)
@@ -56,34 +89,27 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
 
     if output_layer is not None:
         output_layer.source = network.layers[-1]
-        # layers = network.layers + [output_layer]
-        # out_conn = [Connection(pre=network.layers[-1], post=output_layer,
-        #                        connector=MatrixConnector("0"))]
-        # conns = network.connections + out_conn
-        # network = Network(layers=layers, connections=conns)
         network.layers.append(output_layer)
 
     return network
 
 
 def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterContext[str]:
-    input_layer = net.layers[0] # assuming the first layer is of input type
-    input_shape = (1, input_layer.channels, *input_layer.source.shape)
-    net_dict = module_to_list(torch_net, input_shape)
-    state_dict = torch_net.state_dict()
+    net_dict = trimed_named_modules(torch_net)
+
+    state_dict = torch_net.state_dict(keep_vars=True)
     weight_keys = set(['.'.join(k.split('.')[:-1]) for k in state_dict.keys()])
 
     keys = list(net_dict.keys())
     layer_map = {}
     last_stride_idx = 0
 
-
     for idx, layer in enumerate(net.layers):
         if isinstance(layer, InputLayer):
             continue
 
         map_key = str(layer)
-        info = net_dict[layer.key]
+        mod = net_dict[layer.key]
         print(map_key)
         if 'SequentialState' in str(info['parent_info']):
             parent = info['parent_info'].var_name
@@ -99,26 +125,24 @@ def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterConte
 
 
 def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Network:
+    shapes = get_shapes(modules, network)
     layer_map = {}
     layers = network.layers
     connections = network.connections
     keys = list(modules.keys())
-    last_neuron_idx = - 1
+    last_neuron_idx = -1
     for idx, k in enumerate(keys):
-        if (k in ('', 'loss_fn') or
-            isinstance(modules[k], norse.SequentialState)):
-            continue
-
         mod = modules[k]
+        shape = shapes[k]
         name = mod.__class__.__name__.lower()
         if name in ['conv2d', 'avgpool2d', 'linear']:
             continue
 
         if name in ['licell', 'lifcell']:
-
-            size = int(np.prod(layer_info['output_size'][-2:]))
-            channels = mod.output_size[1]
-            cell = __choose_cell(layer_info)
+            size = int(np.prod(shape[-2:]))
+            # size = int(np.prod(layer_info['output_size'][-2:]))
+            channels = shape[1]
+            cell = __choose_cell(mod)
 
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
