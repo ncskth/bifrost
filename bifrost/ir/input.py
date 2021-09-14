@@ -9,15 +9,16 @@ class InputSource:
 
 @dataclass
 class ImageDataset(InputSource):
-    raise NotImplementedError()
+    pass
+    # todo: Implement
     # defines: Dict[int, str] = () # keys are order, thus ints
     # imports: List[str] = ()
     # num_samples: int = 1
 
-
 @dataclass
 class PoissonImageDataset(ImageDataset):
-    raise NotImplementedError()
+    pass
+    # todo: Implement
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):

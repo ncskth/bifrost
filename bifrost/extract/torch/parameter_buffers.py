@@ -5,7 +5,7 @@ which are needed for sPyNNaker but are typically not stored through the state_di
 import torch
 import norse
 DONT_PARSE_THESE_MODULES = (
-    norse.SequentialState,
+    norse.torch.SequentialState,
     torch.nn.modules.loss._Loss, # loss functions
     torch.nn.modules.batchnorm._NormBase # normalizers
 )

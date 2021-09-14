@@ -30,7 +30,7 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 from bifrost.ir.constants import SynapseTypes, SynapseShapes
 from bifrost.extract.utils import try_reduce_param
-from bifrost.extract.torch import DONT_PARSE_THESE_MODULSE
+from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
 # todo: remove all the magic constants and move them to a common file
 
 Continuation = Callable[[Network], Network]
@@ -38,9 +38,10 @@ Continuation = Callable[[Network], Network]
 
 def trimed_named_modules(torch_net: torch.nn.Module):
     def _invalid(k, modules):
-        return (isinstance(modules[k], DONT_PARSE_THESE_MODULSE) or k == '')
+        return (isinstance(modules[k], DONT_PARSE_THESE_MODULES) or k == '')
 
-    modules = dict(torch_net.named_modules()) # this expands inner SequentialStates
+    # this expands inner SequentialStates
+    modules = dict(torch_net.named_modules())
     remove_these =  [k for k in modules.keys() if _invalid(k, modules)]
     for k in remove_these:
         del modules[k]
@@ -128,7 +129,6 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             # size = int(np.prod(layer_info['output_size'][-2:]))
             channels = shape[1]
             cell = __choose_cell(mod)
-
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
             post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
@@ -148,8 +148,11 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
 
 
 def __choose_cell(module: torch.nn.Module):
-    name = module.p.__class__.__name__.lower()
-    if 'liparameters' in name:
+    # neuron types for Norse (LI or LIF) have an attribute for parameters, this
+    # also dictates which 'cell' type we use
+    # todo: I think this is somewhat wrong --- need help
+    parameter_class_name = module.p.__class__.__name__.lower()
+    if 'liparameters' in parameter_class_name:
         return LICell()
     else:
         return LIFCell()  # default
@@ -161,66 +164,55 @@ def __choose_synapse_shape(torch_params):
     else:  # note: do we support delta?
         return SynapseShapes.EXPONENTIAL
 
-def __get_synapse(start_idx: int, end_idx: int, keys: List[int],
-                    modules: Dict[int, torch.nn.Module]) -> Synapse:
-    syn = None
-    for conn_idx in range(start_idx, end_idx):
-        k = keys[conn_idx]
-        name = modules[k].__class__.__name__.lower()
-        if 'conv2d' in name:
-            syn = ConvolutionSynapse()
+
+def __get_synapse(start_index: int, end_index: int, keys: List[str],
+                  modules: Dict[str, torch.nn.Module]) -> Synapse:
+    synapse = None
+    for layer_index in range(start_index, end_index):
+        k = keys[layer_index]
+        module_class_name = modules[k].__class__.__name__.lower()
+        if 'conv2d' in module_class_name:
+            synapse = ConvolutionSynapse()
             break
-        elif 'dense' in name:
-            syn = DenseSynapse()
+        elif 'dense' in module_class_name:
+            synapse = DenseSynapse()
             break
-        elif 'linear' in name:
-            syn = StaticSynapse()
+        elif 'linear' in module_class_name:
+            synapse = StaticSynapse()
             break
-        elif 'avgpool2d' in name:
+        elif 'avgpool2d' in module_class_name:  # these usually come after conv2d
             continue
         # this should not be reached
-        raise ValueError("Unknown connector", name)
+        raise ValueError("Unknown connector", module_class_name)
 
-    mod = modules[keys[end_idx]]
-    syn.synapse_shape = __choose_synapse_shape(mod.p)
+    # end index is always the one for a Cell (LI or LIF)
+    module = modules[keys[end_index]]
+    synapse.synapse_shape = __choose_synapse_shape(module.p)
     # note: seems we only support current synapse types as of now (7/9/21)
-    return syn
+    return synapse
 
 
-def __get_connector(start_idx: int, end_idx: int, keys: List[int],
-                    modules: Dict[int, torch.nn.Module]) -> Connector:
-    pool_idx = None
-    ctor = None
+def __get_connector(start_idx: int, end_idx: int, keys: List[str],
+                    modules: Dict[str, torch.nn.Module]) -> Connector:
+    pool_index = None
+    connector = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        name = modules[k].__class__.__name__.lower()
-        pool = '' if pool_idx is None else str(pool_idx)
-        if 'conv2d' in name:
-            ctor = ConvolutionConnector(str(k), pooling_key=pool)
-            continue
-        elif 'dense' in name:
-            ctor = DenseConnector(str(k), pooling_key=pool)
-            continue
-        elif 'linear' in name:
-            ctor = MatrixConnector(str(k))
-            continue
-        elif 'avgpool2d' in name:
-            pool_idx = k
+        module_class_name = modules[k].__class__.__name__.lower()
+        pool_key = '' if pool_index is None else str(pool_index)
+        if 'conv2d' in module_class_name:
+            connector = ConvolutionConnector(str(k), pooling_key=pool_key)
+            break
+        elif 'dense' in module_class_name:
+            connector = DenseConnector(str(k), pooling_key=pool_key)
+            break
+        elif 'linear' in module_class_name:
+            connector = MatrixConnector(str(k))
+            break
+        elif 'avgpool2d' in module_class_name:
+            pool_index = k
             continue
         # this should not be reached
-        raise ValueError("Unknown connector", name)
+        raise ValueError("Unknown connector", module_class_name)
 
-    return ctor
-
-
-def module_to_layer(
-    module: torch.nn.Module, index: int, input_channels: int, input_neurons: int
-) -> Layer:
-    if isinstance(module, norse.LICell):
-        return NeuronLayer(str(index), input_neurons, input_channels,
-                           index=index, cell=LICell())
-    elif isinstance(module, norse.LIFCell):
-        return NeuronLayer(str(index), input_neurons, input_channels, index=index,
-                           cell=LIFCell())
-    else:
-        raise ValueError("Unknown torch module layer", module)
+    return connector
