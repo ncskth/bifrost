@@ -27,11 +27,17 @@ def test_matrix_connection_to_pynn():
     l2 = NeuronLayer("y", 1, 1)
     torch_context = TorchContext({"l_x_1_1": "0", "l_y_1_1": "lw"})
     c = Connection(l1, l2, MatrixConnector("layer.weights"))
-    var = 'c_x_0__to__y_0'
+    var = 'c_x___to__y_'
     actual = export_connection(c, torch_context, join_str=", ", spaces=0)
     # projections end in a line break
-    expected = f"{var} = {SIM_NAME}.Projection(l_x_1_[0], l_y_1_[0], " \
-               f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())" \
-               f"{var}.set(weight=_params[\"layer.weights.weight\"][0, 0])"
+    expected = (
+        f"{var} = {{ch_in:{{ch_out:{SIM_NAME}.Projection(l_x_1_[ch_in], l_y_1_[ch_out], " 
+        f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())" 
+        f"for ch_out in range(1)}} for ch_in in range(1)}}" 
+        f"tmp =  {{ch_in:{{ch_out:{var}[ch_in][ch_out].set(" 
+        f"weight=_params[\"layer.weights.weight\"][ch_out, ch_in].detach().numpy())"  # seems like torch uses inverted channels
+        f"for ch_out in range(1)}} for ch_in in range(1)}}"
+    )
+
     assert rb(str(actual)) == rb(expected)
     assert len(actual.imports) == 0

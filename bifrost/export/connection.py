@@ -22,25 +22,42 @@ def export_connection(connection: Connection, context: ParameterContext[str],
 
     sp = " " * spaces
     projections = []
-    for ch_in in range(connection.pre.channels):
-        for ch_out in range(connection.post.channels):
-            var = connection.variable(ch_in, ch_out)
-            connector = export_connector(connection, ch_in, ch_out, context)
-            synapse = export_synapse(connection)
-            projection = [
-                f"{var} = {SIM_NAME}.Projection(\n"
-                f"{sp}{connection.pre.variable('')}[{ch_in}]",
-                f"{connection.post.variable('')}[{ch_out}]",
-                f"{connector.value}",
-                f"{synapse.value})",
-            ]
-            proj = f"{join_str}{sp}".join(projection)
-            projections.append(f"{proj}\n{connector.configuration}\n")
+    var = connection.variable("", "")
+    connector = export_connector(connection, "ch_in", "ch_out", context, spaces=12)
+    synapse = export_synapse(connection)
+    projection = [
+            f"{SIM_NAME}.Projection(\n"
+            f"{sp * 2}{connection.pre.variable('')}[ch_in]",
+            f"{sp}{connection.post.variable('')}[ch_out]",
+            f"{sp}{connector.value}",
+            f"{sp}{synapse.value})",
+    ]
+    proj = f"{join_str}{sp}".join(projection)
 
-    return Statement(
-        value="\n".join(projections),
-        imports=connector.imports,
+    stt = (
+        f"{var} = {{\n"
+        f"ch_in: \n"
+        f"{sp}{{ch_out: {proj}\n"
+        f"{sp * 2}for ch_out in range({connection.post.channels})\n"
+        f"{sp}}}\n"
+        f"{sp}for ch_in in range({connection.pre.channels})\n"
+        f"}}\n"
     )
+
+    if len(connector.configuration):
+        cfgs = (
+            f"tmp = {{\n"
+            f"ch_in: \n"
+            f"{sp}{{ch_out: {connector.configuration}\n"
+            f"{sp * 2}for ch_out in range({connection.post.channels})\n"
+            f"{sp}}}\n"
+            f"{sp}for ch_in in range({connection.pre.channels})\n"
+            f"}}\n"
+        )
+    else:
+        cfgs = ""
+
+    return Statement(value=f"{stt}\n{cfgs}", imports=connector.imports,)
 
 def export_synapse(connection: Connection[Layer, Layer]) -> Statement:
     synapse = connection.post.synapse
@@ -75,10 +92,10 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       spaces: int = 8) -> Statement:
     conn = connection.connector
     weights = context.linear_weights(conn.weights_key, channel_in, channel_out)
-    var = connection.variable(channel_in, channel_out)
+    var = connection.variable("", "")
     return ConnectionStatement(
         f"{SIM_NAME}.AllToAllConnector()",
-        configuration=f"{var}.set(weight={weights})",
+        configuration=f"{var}[{channel_in}][{channel_out}].set(weight={weights})",
     )
 
 def export_conv(connection: Connection[Layer, Layer],
