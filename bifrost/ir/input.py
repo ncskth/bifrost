@@ -34,8 +34,14 @@ class SpiNNakerSPIFInput(InputSource):
     def y(self):
         return self.shape[0]
 
+@dataclass
+class RandomPoissonSource(InputSource):
+    rates: List[int]
+
 class DummyTestInputSource(InputSource):
     pass
+
+
 
 @dataclass
 class InputLayer(Layer):

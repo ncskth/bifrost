@@ -21,11 +21,14 @@ def export_dict(d: Dict[Any, Any], join_str=",\n", n_spaces=0) -> Statement:
     return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
 
 
-def export_list(var: str, l: List[str], join_str=", ", n_spaces=0):
-    spaces = " " * n_spaces
-    lst = (f"{join_str}{spaces}").join([f"\"{v}\"" for v in l])
-
+def export_list_var(var: str, l: List[str], join_str=", ", n_spaces=0):
+    lst = export_list(l, join_str, n_spaces)
     return f"{var} = [{lst}]"
+
+
+def export_list(l: List[str], join_str=", ", n_spaces=0, q="\""):
+    spaces = " " * n_spaces
+    return (f"{join_str}{spaces}").join([f"{q}{v}{q}" for v in l])
 
 
 def export_structure(layer: Layer) -> Statement:

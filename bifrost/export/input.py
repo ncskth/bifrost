@@ -1,12 +1,14 @@
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import (InputLayer, SpiNNakerSPIFInput,
-                              DummyTestInputSource, PoissonImageDataset)
+                              DummyTestInputSource, PoissonImageDataset,
+                              RandomPoissonSource)
 from bifrost.ir.parameter import ParameterContext
 from bifrost.export.statement import Statement
 from bifrost.export.record import export_record
 from bifrost.export.pynn import (SIM_NAME, PyNNSynapseShapes,
                                  PyNNSynapseTypes, PyNNNeuronTypes)
-from bifrost.export.utils import export_structure
+from bifrost.export.utils import export_structure, export_list
+import numpy as np
 
 def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
@@ -16,6 +18,8 @@ def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Stateme
         statement = export_dummy_test_input(layer, ctx)
     elif isinstance(source, PoissonImageDataset):
         statement = export_poisson_image_dataset_input(layer, ctx)
+    elif isinstance(source, RandomPoissonSource):
+        statement = export_random_poisson_input(layer, ctx)
     else:
         raise ValueError("Unknown input source", source)
 
@@ -37,6 +41,31 @@ def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statemen
     )
 
     statement = Statement(texts)
+    return statement
+
+
+def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
+    source = layer.source
+    var = f"{layer.variable('')}"
+    var_sp = " " * (len(var) + 4)
+    tab = " " * 4
+    size = int(np.prod(source.shape))
+    if len(source.rates) > 1:
+        rl = export_list(source.rates, q="")
+        rates = f"[{rl}]"
+    else:
+        rates = source.rates[0]
+
+    structure = export_structure(source)
+    texts = (f"{var} = {{channel: {SIM_NAME}.Population({size}, \n"  
+         f"{var_sp}{tab}{SIM_NAME}.SpikeSourcePoisson(\n"
+         f"{var_sp}{tab}rate={rates}),\n"
+         f"{var_sp}{tab}structure={structure.value})\n"
+         f"{var_sp}for channel in range({layer.channels})}}"
+    )
+
+    statement = Statement(texts,
+                          imports=structure.imports)
     return statement
 
 

@@ -1,5 +1,5 @@
 from bifrost.export.output import export_layer_output
-from bifrost.export.utils import export_list, export_structure
+from bifrost.export.utils import export_list, export_structure, export_list_var
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
@@ -28,7 +28,7 @@ def export_cell_params(layer: Layer, context: ParameterContext[str],
     list_name = f"__parameter_names"
     dict_name = "__parameter_dict"
     fcall = context.neuron_parameter(layer_name, par_var)
-    names = export_list(list_name, context.parameter_names(layer.cell))
+    names = export_list_var(list_name, context.parameter_names(layer.cell))
     params = []
 
     f = f"""
