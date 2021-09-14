@@ -24,9 +24,22 @@ class ParameterContext(Generic[Output]):
         ...
 
     @abstractmethod
+    def conv2d_strides(self, layer: str) -> Output:
+        ...
+
+    @abstractmethod
+    def conv2d_padding(self, layer: str) -> Output:
+        ...
+
+    @abstractmethod
+    def conv2d_pooling(self, layer: str) -> Output:
+        ...
+
+    @abstractmethod
     def neuron_parameter(self, layer: str, parameter: str) -> Output:
         ...
 
     @abstractmethod
     def parameter_names(self, layer: Cell) -> List[str]:
         ...
+

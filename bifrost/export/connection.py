@@ -6,7 +6,7 @@ from bifrost.ir.connection import (
 from bifrost.export.statement import Statement, ConnectionStatement
 from bifrost.ir.synapse import (
     StaticSynapse, ConvolutionSynapse, DenseSynapse)
-from bifrost.export.pynn import SIM_NAME
+from bifrost.export.pynn import SIMULATOR_NAME
 
 def export_connection(connection: Connection, context: ParameterContext[str],
                       join_str: str = ",\n", spaces: int = 4) -> Statement:
@@ -15,58 +15,51 @@ def export_connection(connection: Connection, context: ParameterContext[str],
     if not isinstance(connection.post.synapse, StaticSynapse):
         raise ValueError("Unknown Synapse", connection.synapse)
 
-    # todo: this is not true, channel numbers are not necesarily the same
-    # assert (
-    #     connection.pre.channels == connection.post.channels
-    # ), f"LIF -> LIF connection channels not equal! {connection.pre.channels} != {connection.post.channels}"
-
-    sp = " " * spaces
+    text_spaces = " " * spaces
     projections = []
-    var = connection.variable("", "")
-    connector = export_connector(connection, "ch_in", "ch_out", context, spaces=12)
+    variable_name = connection.variable("", "")
+    connector = export_connector(connection, "channel_in", "channel_out",
+                                 context, spaces=12)
     synapse = export_synapse(connection)
     projection = [
-            f"{SIM_NAME}.Projection(\n"
-            f"{sp * 2}{connection.pre.variable('')}[ch_in]",
-            f"{sp}{connection.post.variable('')}[ch_out]",
-            f"{sp}{connector.value}",
-            f"{sp}{synapse.value})",
+            f"{SIMULATOR_NAME}.Projection(\n"
+            f"{text_spaces * 2}{connection.pre.variable('')}[channel_in]",
+            f"{text_spaces}{connection.post.variable('')}[channel_out]",
+            f"{text_spaces}{connector.value}",
+            f"{text_spaces}{synapse.value})",
     ]
-    proj = f"{join_str}{sp}".join(projection)
+    projection_text = f"{join_str}{text_spaces}".join(projection)
 
-    stt = (
-        f"{var} = {{\n"
-        f"ch_in: \n"
-        f"{sp}{{ch_out: {proj}\n"
-        f"{sp * 2}for ch_out in range({connection.post.channels})\n"
-        f"{sp}}}\n"
-        f"{sp}for ch_in in range({connection.pre.channels})\n"
+    statement_text = (
+        f"{variable_name} = {{\n"
+        f"channel_in: \n"
+        f"{text_spaces}{{channel_out: {projection_text}\n"
+        f"{text_spaces * 2}for channel_out in range({connection.post.channels})\n"
+        f"{text_spaces}}}\n"
+        f"{text_spaces}for channel_in in range({connection.pre.channels})\n"
         f"}}\n"
     )
 
     if len(connector.configuration):
-        cfgs = (
-            f"tmp = {{\n"
-            f"ch_in: \n"
-            f"{sp}{{ch_out: {connector.configuration}\n"
-            f"{sp * 2}for ch_out in range({connection.post.channels})\n"
-            f"{sp}}}\n"
-            f"{sp}for ch_in in range({connection.pre.channels})\n"
-            f"}}\n"
+        configuration_text = (
+            f"for channel_in in range({connection.pre.channels}):\n"
+            f"{text_spaces}for channel_out in range({connection.post.channels}):\n"
+            f"{text_spaces * 2}{connector.configuration}\n"
         )
     else:
-        cfgs = ""
+        configuration_text = ""
 
-    return Statement(value=f"{stt}\n{cfgs}", imports=connector.imports,)
+    return Statement(value=f"{statement_text}\n{configuration_text}",
+                     imports=connector.imports,)
 
 def export_synapse(connection: Connection[Layer, Layer]) -> Statement:
     synapse = connection.post.synapse
     if isinstance(synapse, ConvolutionSynapse):
-        return Statement(f"{SIM_NAME}.Convolution()")
+        return Statement(f"{SIMULATOR_NAME}.Convolution()")
     elif isinstance(synapse, DenseSynapse):
-        return Statement(f"{SIM_NAME}.Dense()")
+        return Statement(f"{SIMULATOR_NAME}.Dense()")
     elif isinstance(synapse, StaticSynapse):
-        return Statement(f"{SIM_NAME}.StaticSynapse()")
+        return Statement(f"{SIMULATOR_NAME}.StaticSynapse()")
     else:
         raise ValueError(f"Unknown Synapse type: {synapse}")
 
@@ -90,50 +83,49 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       channel_in: int, channel_out: int,
                       context: ParameterContext[str],
                       spaces: int = 8) -> Statement:
-    conn = connection.connector
-    weights = context.linear_weights(conn.weights_key, channel_in, channel_out)
-    var = connection.variable("", "")
+    connector = connection.connector
+    weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
+    variable_name = connection.variable("", "")
     return ConnectionStatement(
-        f"{SIM_NAME}.AllToAllConnector()",
-        configuration=f"{var}[{channel_in}][{channel_out}].set(weight={weights})",
+        f"{SIMULATOR_NAME}.AllToAllConnector()",
+        configuration=f"{variable_name}[{channel_in}][{channel_out}].set(weight={weights})",
     )
 
 def export_conv(connection: Connection[Layer, Layer],
                 channel_in: int, channel_out: int,
                 context: ParameterContext[str],
                 spaces: int = 8) -> Statement:
-    sp = " " * spaces
-    conn = connection.connector
+    spaces_text = " " * spaces
+    connector = connection.connector
     weights = context.conv2d_weights(
-                conn.weights_key, channel_in, channel_out)
-    strides = context.conv2d_strides(conn.weights_key)
-    pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
-                               if len(conn.pooling_key) else (None, None))
-    # todo: pool padding here needs to be added but I'm not sure if truly needed
-    padding = context.conv2d_padding(conn.weights_key)
-    stt = [f"{SIM_NAME}.ConvolutionConnector({weights}",
+                connector.weights_key, channel_in, channel_out)
+    strides = context.conv2d_strides(connector.weights_key)
+    pool_shape, pool_stride = (context.conv2d_pooling(connector.pooling_key)
+                               if len(connector.pooling_key) else (None, None))
+    padding = context.conv2d_padding(connector.weights_key)
+    stt = [f"{SIMULATOR_NAME}.ConvolutionConnector({weights}",
         f"strides={strides}",
         f"pool_shape={pool_shape}",
         f"pool_stride={pool_stride}",
         f"padding={padding})"
     ]
-    return ConnectionStatement(f",\n{sp}".join(stt))
+    return ConnectionStatement(f",\n{spaces_text}".join(stt))
 
 
 def export_dense(connection: Connection[Layer, Layer],
                  channel_in: int, channel_out: int,
                  context: ParameterContext[str],
                  spaces: int = 8) -> Statement:
-    sp = " " * spaces
-    conn = connection.connector
-    weights = context.linear_weights(conn.weights_key, channel_in, channel_out)
-    pool_shape, pool_stride = (context.conv2d_pooling(conn.pooling_key)
-                               if len(conn.pooling_key) else ('None', 'None'))
+    spaces_text = " " * spaces
+    connector = connection.connector
+    weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
+    pool_shape, pool_stride = (context.conv2d_pooling(connector.pooling_key)
+                               if len(connector.pooling_key) else ('None', 'None'))
     # todo: pool padding here needs to be added but I'm not sure if truly needed
     return ConnectionStatement(
-        f"{SIM_NAME}.DenseConnector({weights}, \n"
-        f"{sp}pool_shape={pool_shape}, \n"
-        f"{sp}pool_stride={pool_stride})",
+        f"{SIMULATOR_NAME}.DenseConnector({weights}, \n"
+        f"{spaces_text}pool_shape={pool_shape}, \n"
+        f"{spaces_text}pool_stride={pool_stride})",
     )
 
 

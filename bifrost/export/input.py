@@ -5,7 +5,7 @@ from bifrost.ir.input import (InputLayer, SpiNNakerSPIFInput,
 from bifrost.ir.parameter import ParameterContext
 from bifrost.export.statement import Statement
 from bifrost.export.record import export_record
-from bifrost.export.pynn import (SIM_NAME, PyNNSynapseShapes,
+from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
                                  PyNNSynapseTypes, PyNNNeuronTypes)
 from bifrost.export.utils import export_structure, export_list
 import numpy as np
@@ -29,15 +29,15 @@ def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Stateme
 
 def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    var = f"{layer.variable('')}"
-    var_sp = " " * (len(var) + 4)
+    variable_name = f"{layer.variable('')}"
+    variable_spaces = " " * (len(variable_name) + 4)
     tab = " " * 4
-    texts = (f"{var} = {{channel: {SIM_NAME}.Population(None, \n"  
-         f"{var_sp}{tab}{SIM_NAME}.external_devices.SPIFRetinaDevice(\n"  
-         f"{var_sp}{tab}{tab}base_key=channel,width={source.x},height={source.y},\n"  
-         f"{var_sp}{tab}{tab}sub_width={source.x_sub},sub_height={source.y_sub},\n"
-         f"{var_sp}{tab}{tab}input_x_shift={source.x_shift},input_y_shift={source.y_shift}))\n"
-         f"{var_sp}for channel in range({layer.channels})}}"
+    texts = (f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population(None, \n"  
+         f"{variable_spaces}{tab}{SIMULATOR_NAME}.external_devices.SPIFRetinaDevice(\n"  
+         f"{variable_spaces}{tab}{tab}base_key=channel,width={source.x},height={source.y},\n"  
+         f"{variable_spaces}{tab}{tab}sub_width={source.x_sub},sub_height={source.y_sub},\n"
+         f"{variable_spaces}{tab}{tab}input_x_shift={source.x_shift},input_y_shift={source.y_shift}))\n"
+         f"{variable_spaces}for channel in range({layer.channels})}}"
     )
 
     statement = Statement(texts)
@@ -46,8 +46,8 @@ def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statemen
 
 def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    var = f"{layer.variable('')}"
-    var_sp = " " * (len(var) + 4)
+    variable_name = f"{layer.variable('')}"
+    variable_spaces = " " * (len(variable_name) + 4)
     tab = " " * 4
     size = int(np.prod(source.shape))
     if len(source.rates) > 1:
@@ -57,11 +57,11 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
         rates = source.rates[0]
 
     structure = export_structure(source)
-    texts = (f"{var} = {{channel: {SIM_NAME}.Population({size}, \n"  
-         f"{var_sp}{tab}{SIM_NAME}.SpikeSourcePoisson(\n"
-         f"{var_sp}{tab}rate={rates}),\n"
-         f"{var_sp}{tab}structure={structure.value})\n"
-         f"{var_sp}for channel in range({layer.channels})}}"
+    texts = (f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({size}, \n"  
+         f"{variable_spaces}{tab}{SIMULATOR_NAME}.SpikeSourcePoisson(\n"
+         f"{variable_spaces}{tab}rate={rates}),\n"
+         f"{variable_spaces}{tab}structure={structure.value})\n"
+         f"{variable_spaces}for channel in range({layer.channels})}}"
     )
 
     statement = Statement(texts,
@@ -70,33 +70,33 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
 
 
 def export_dummy_test_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
-    pop = [f"{layer.variable('')} = {{0: DummyInputSource()}}"]
-    recs = export_record(layer)
-    stt = Statement(pop)
-    if len(recs.value):
-        stt += recs
-    return stt
+    population = [f"{layer.variable('')} = {{0: DummyInputSource()}}"]
+    recording = export_record(layer)
+    statement = Statement(population)
+    if len(recording.value):
+        statement += recording
+    return statement
 
 
 def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
-    param_def_name = "__nrn_params_"
+    parameter_function_name = "__nrn_params_"
     parameter_defines = [
-        f"def {param_def_name}{layer.variable(channel)}():\n"
+        f"def {parameter_function_name}{layer.variable(channel)}():\n"
         f"    return dict()\n"
         for channel in range(layer.channels)
     ]
-    struct = export_structure(layer.source) # in this case the struct has the shape
+    structure = export_structure(layer.source) # in this case the struct has the shape
     statement = Statement([
-            (f"{layer.variable(channel)} = {SIM_NAME}.Population({layer.size}, \n"
-             f"    {SIM_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-             f"        **{param_def_name}{layer.variable(channel)}()), \n"
-             f"    structure={struct.value}, \n"
+            (f"{layer.variable(channel)} = {SIMULATOR_NAME}.Population({layer.size}, \n"
+             f"    {SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
+             f"        **{parameter_function_name}{layer.variable(channel)}()), \n"
+             f"    structure={structure.value}, \n"
              f"    label=\"{layer.variable(channel)}\") \n")
             for channel in range(layer.channels)
         ],
-        imports=struct.imports,
-        preambles=parameter_defines + list(struct.preambles)
+        imports=structure.imports,
+        preambles=parameter_defines + list(structure.preambles)
     )
 
     return statement

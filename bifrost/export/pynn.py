@@ -1,20 +1,20 @@
 from enum import Enum
 
-SIM_NAME = "spynn"
+SIMULATOR_NAME = "spynn"
 
-pynn_imports = [f"import spynnaker8 as {SIM_NAME}"]
+pynn_imports = [f"import spynnaker8 as {SIMULATOR_NAME}"]
 
 def pynn_header(timestep=1.0):
     return f"""
-{SIM_NAME}.setup({timestep})
+{SIMULATOR_NAME}.setup({timestep})
 """
 
 
 def pynn_footer(runtime):
     return f"""
 run_time = {runtime}  # ms
-{SIM_NAME}.run(run_time)
-{SIM_NAME}.end()
+{SIMULATOR_NAME}.run(run_time)
+{SIMULATOR_NAME}.end()
 """
 
 

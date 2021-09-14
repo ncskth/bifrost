@@ -7,7 +7,7 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from bifrost.ir.constants import (SynapseShapes, SynapseTypes)
 from bifrost.export.statement import Statement
-from bifrost.export.pynn import (SIM_NAME, PyNNSynapseShapes,
+from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
                                  PyNNSynapseTypes, PyNNNeuronTypes)
 from bifrost.export.input import export_layer_input
 from bifrost.export.record import export_record
@@ -15,31 +15,27 @@ from bifrost.export.record import export_record
 
 def export_cell_params(layer: Layer, context: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 8) -> Statement:
-    # todo: take 'locations/addresses' from context and express as a function
-    #       which returns a dictionary so that once it's called, we can use the
-    #       ** operator to pass key-value pairs as parameters to cell class
-    #       constructor
-    par_var = "_par_name"
+
+    parameter_variable_name = "_par_name"
     cell_name = layer.cell.__class__.__name__
-    sp = " " * spaces
+    spaces_text = " " * spaces
     layer_name = str(layer)
     func_name = f"__nrn_params_{layer_name}_f"
 
     list_name = f"__parameter_names"
     dict_name = "__parameter_dict"
-    fcall = context.neuron_parameter(layer_name, par_var)
+    fcall = context.neuron_parameter(layer_name, parameter_variable_name)
     names = export_list_var(list_name, context.parameter_names(layer.cell))
     params = []
 
-    f = f"""
-def {func_name}():
-    {names}
-    {dict_name} = dict()
-    for {par_var} in {list_name}:
-        k, v = {fcall}
-        {dict_name}[k] = v
-    return {dict_name}
-    """
+    f = (f"def {func_name}():\n"
+         f"{spaces_text}{names}\n"
+         f"{spaces_text}{dict_name} = dict()\n"
+         f"{spaces_text}for {parameter_variable_name} in {list_name}:\n"
+         f"{spaces_text * 2}k, v = {fcall}\n"
+         f"{spaces_text * 2}{dict_name}[k] = v\n"
+         f"{spaces_text}return {dict_name}\n"
+    )
     return Statement(f"**({func_name}())", preambles=[f])
 
 
@@ -61,7 +57,7 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     var = layer.variable('')
     var_sp = " " * (len(var) + 4)
     tab = " " * 4
-    neuron = export_neuron_type(layer, context, join_str=", ", spaces=0)
+    neuron = export_neuron_type(layer, context, join_str=", ", spaces=4)
     structure = export_structure(layer)
     label_template = f"{layer.variable('')}{{channel}}"
 
@@ -69,7 +65,7 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
             f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
             f"label=f\"{label_template}\""])
 
-    pop = (f"{var} = {{channel: {SIM_NAME}.Population({param_template})\n"
+    pop = (f"{var} = {{channel: {SIMULATOR_NAME}.Population({param_template})\n"
            f"{var_sp}for channel in range({layer.channels})}}"
            )
 
@@ -102,7 +98,7 @@ def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
     pynn_parameter_statement = export_cell_params(layer, ctx, join_str, spaces)
     cell_type = get_pynn_cell_type(layer.cell, layer.synapse)
     return Statement(
-        f"{SIM_NAME}.{cell_type}({pynn_parameter_statement.value})",
+        f"{SIMULATOR_NAME}.{cell_type}({pynn_parameter_statement.value})",
         imports=pynn_parameter_statement.imports,
         preambles=pynn_parameter_statement.preambles
     )

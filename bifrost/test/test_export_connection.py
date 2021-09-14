@@ -1,7 +1,7 @@
 from bifrost.export.torch import TorchContext
 from bifrost.ir.connection import *
 from bifrost.export.connection import *
-from bifrost.export.pynn import SIM_NAME
+from bifrost.export.pynn import SIMULATOR_NAME
 from bifrost.parse.remove_blank import remove_blank as rb
 
 class MockContext(ParameterContext):
@@ -31,12 +31,17 @@ def test_matrix_connection_to_pynn():
     actual = export_connection(c, torch_context, join_str=", ", spaces=0)
     # projections end in a line break
     expected = (
-        f"{var} = {{ch_in:{{ch_out:{SIM_NAME}.Projection(l_x_1_[ch_in], l_y_1_[ch_out], " 
-        f"{SIM_NAME}.AllToAllConnector(), {SIM_NAME}.StaticSynapse())" 
-        f"for ch_out in range(1)}} for ch_in in range(1)}}" 
-        f"tmp =  {{ch_in:{{ch_out:{var}[ch_in][ch_out].set(" 
-        f"weight=_params[\"layer.weights.weight\"][ch_out, ch_in].detach().numpy())"  # seems like torch uses inverted channels
-        f"for ch_out in range(1)}} for ch_in in range(1)}}"
+        f"{var} = {{channel_in:{{channel_out:{SIMULATOR_NAME}.Projection("
+        f"l_x_1_[channel_in], l_y_1_[channel_out], " 
+        f"{SIMULATOR_NAME}.AllToAllConnector(), {SIMULATOR_NAME}.StaticSynapse())" 
+        f"for channel_out in range(1)}} for channel_in in range(1)}}" 
+        f"for channel_in in range(1):"
+        f"  for channel_out in range(1):"
+        f"     {var}[channel_in][channel_out].set(" 
+        f"     weight=_params[\"layer.weights.weight\"]"
+        f"            [channel_out, channel_in].detach().numpy())"
+                      # seems like torch uses inverted channels
+
     )
 
     assert rb(str(actual)) == rb(expected)

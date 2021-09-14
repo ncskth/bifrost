@@ -10,7 +10,7 @@ from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.parameter import ParameterContext
 
 from bifrost.export import population, statement, input
-from bifrost.export.pynn import SIM_NAME
+from bifrost.export.pynn import SIMULATOR_NAME
 from bifrost.parse.remove_blank import remove_blank as rb
 
 torch_context = TorchContext({"l": "0"})
@@ -20,7 +20,7 @@ def test_input_to_pynn():
     spif_layer = InputLayer("i", 1, 1,
                             source=SpiNNakerSPIFInput(shape=[2, 1]))
     actual = input.export_layer_input(spif_layer, torch_context)
-    expected = (f"l_i_1_ = {{channel: {SIM_NAME}.Population(None,{SIM_NAME}.external_devices." 
+    expected = (f"l_i_1_ = {{channel: {SIMULATOR_NAME}.Population(None,{SIMULATOR_NAME}.external_devices." 
                 f"SPIFRetinaDevice(base_key=channel,width=1,height=2,sub_width=32," 
                 f"sub_height=16,input_x_shift=16,input_y_shift=0))\n"
                 f"for channel in range(1)}}")
@@ -37,7 +37,7 @@ def test_lif_to_pynn():
     struct = bifrost.export.utils.export_structure(l)
     actual = population.export_layer_neuron(l, torch_context)
     # population blocks end in a line break
-    expected = (f'{var} = {{channel: {SIM_NAME}.Population(10, {lif_p.value}, structure={struct.value}, '
+    expected = (f'{var} = {{channel: {SIMULATOR_NAME}.Population(10, {lif_p.value}, structure={struct.value}, '
                 f'label=f"{var}{{channel}}")\n for channel in range(1)}}')
     assert rb(actual.value) == rb(expected)
 
@@ -48,7 +48,7 @@ def test_lif_neuron_to_pynn():
     torch_context = TorchContext({lkey: "0"})
     s = population.export_neuron_type(l, torch_context)
     expected = f"**(__nrn_params_{lkey}_f())"
-    assert s.value == f"{SIM_NAME}.IF_curr_exp({expected})"
+    assert s.value == f"{SIMULATOR_NAME}.IF_curr_exp({expected})"
 
 
 def test_dict_to_pynn_parameters():
