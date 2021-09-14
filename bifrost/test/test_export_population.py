@@ -1,3 +1,4 @@
+import bifrost.export.pynn
 import bifrost.export.utils
 from bifrost.export.torch import TorchContext
 from typing import List
@@ -34,7 +35,7 @@ def test_lif_to_pynn():
     var = l.variable("")
     torch_context = TorchContext({lkey: "0"})
     lif_p = population.export_neuron_type(l, torch_context)
-    struct = bifrost.export.utils.export_structure(l)
+    struct = bifrost.export.pynn.export_structure(l)
     actual = population.export_layer_neuron(l, torch_context)
     # population blocks end in a line break
     expected = (f'{var} = {{channel: {SIMULATOR_NAME}.Population(10, {lif_p.value}, structure={struct.value}, '

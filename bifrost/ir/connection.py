@@ -16,18 +16,18 @@ class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
 
 @dataclass
-class MatrixConnector(Connector):
-    weights_key: str = "weights"
+class MatrixConnector(Connector):  # todo: is this the same as All-to-All?
+    weights_key: str = "layer access key for weights"
 
 @dataclass
 class DenseConnector(Connector):
-    weights_key: str = "weights"
-    pooling_key: str = "pooling"
+    weights_key: str = "layer access key for weights"
+    pooling_key: str = "layer access key for pooling"
 
 @dataclass
 class ConvolutionConnector(Connector):
-    weights_key: str = "weights"
-    pooling_key: str = "pooling"
+    weights_key: str = "layer access key for weights"
+    pooling_key: str = "layer access key for pooling"
 
 
 From = TypeVar("From", Layer, Layer)

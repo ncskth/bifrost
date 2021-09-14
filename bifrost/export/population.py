@@ -1,5 +1,5 @@
 from bifrost.export.output import export_layer_output
-from bifrost.export.utils import export_list, export_structure, export_list_var
+from bifrost.export.utils import export_list, export_list_var
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
@@ -8,35 +8,36 @@ from bifrost.ir.cell import (LIFCell, LICell, IFCell)
 from bifrost.ir.constants import (SynapseShapes, SynapseTypes)
 from bifrost.export.statement import Statement
 from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
-                                 PyNNSynapseTypes, PyNNNeuronTypes)
+                                 PyNNSynapseTypes, PyNNNeuronTypes, export_structure)
 from bifrost.export.input import export_layer_input
 from bifrost.export.record import export_record
 
 
 def export_cell_params(layer: Layer, context: ParameterContext[str],
                        join_str:str = ",\n", spaces:int = 8) -> Statement:
-
+    # todo: review if this is the best approach
     parameter_variable_name = "_par_name"
     cell_name = layer.cell.__class__.__name__
     spaces_text = " " * spaces
     layer_name = str(layer)
-    func_name = f"__nrn_params_{layer_name}_f"
+    generator_function_name = f"__nrn_params_{layer_name}_f"
 
-    list_name = f"__parameter_names"
-    dict_name = "__parameter_dict"
-    fcall = context.neuron_parameter(layer_name, parameter_variable_name)
-    names = export_list_var(list_name, context.parameter_names(layer.cell))
-    params = []
+    parameter_list_name = "__parameter_names"
+    temporary_dictionary_name = "__parameter_dict"
+    function_call_for_parameters = context.neuron_parameter(
+                                    layer_name, parameter_variable_name)
+    parameter_names = export_list_var(parameter_list_name,
+                            context.parameter_names(layer.cell))
 
-    f = (f"def {func_name}():\n"
-         f"{spaces_text}{names}\n"
-         f"{spaces_text}{dict_name} = dict()\n"
-         f"{spaces_text}for {parameter_variable_name} in {list_name}:\n"
-         f"{spaces_text * 2}k, v = {fcall}\n"
-         f"{spaces_text * 2}{dict_name}[k] = v\n"
-         f"{spaces_text}return {dict_name}\n"
+    f = (f"def {generator_function_name}():\n"
+         f"{spaces_text}{parameter_names}\n"
+         f"{spaces_text}{temporary_dictionary_name} = dict()\n"
+         f"{spaces_text}for {parameter_variable_name} in {parameter_list_name}:\n"
+         f"{spaces_text * 2}k, v = {function_call_for_parameters}\n"
+         f"{spaces_text * 2}{temporary_dictionary_name}[k] = v\n"
+         f"{spaces_text}return {temporary_dictionary_name}\n"
     )
-    return Statement(f"**({func_name}())", preambles=[f])
+    return Statement(f"**({generator_function_name}())", preambles=[f])
 
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
@@ -54,22 +55,23 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
 
 def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
                         param_join_str=", \n", pop_join_str=",\n") -> Statement:
-    var = layer.variable('')
-    var_sp = " " * (len(var) + 4)
+    layer_variable_name = layer.variable('')
+    var_name_spaces = " " * (len(layer_variable_name) + 4)
     tab = " " * 4
     neuron = export_neuron_type(layer, context, join_str=", ", spaces=4)
     structure = export_structure(layer)
     label_template = f"{layer.variable('')}{{channel}}"
 
-    param_template = f"{param_join_str}{var_sp}{tab}".join([
+    param_template = f"{param_join_str}{var_name_spaces}{tab}".join([
             f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
             f"label=f\"{label_template}\""])
 
-    pop = (f"{var} = {{channel: {SIMULATOR_NAME}.Population({param_template})\n"
-           f"{var_sp}for channel in range({layer.channels})}}"
-           )
+    population_text = (
+        f"{layer_variable_name} = {{channel: {SIMULATOR_NAME}.Population({param_template})\n"
+        f"{var_name_spaces}for channel in range({layer.channels})}}"
+    )
 
-    statement = Statement(pop,
+    statement = Statement(population_text,
                           imports=neuron.imports,
                           preambles=neuron.preambles)
 

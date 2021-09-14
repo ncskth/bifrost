@@ -6,8 +6,8 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.export.statement import Statement
 from bifrost.export.record import export_record
 from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
-                                 PyNNSynapseTypes, PyNNNeuronTypes)
-from bifrost.export.utils import export_structure, export_list
+                                 PyNNSynapseTypes, PyNNNeuronTypes, export_structure)
+from bifrost.export.utils import export_list
 import numpy as np
 
 def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:

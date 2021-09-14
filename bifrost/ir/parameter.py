@@ -15,6 +15,7 @@ class ParameterContext(Generic[Output]):
     def preamble(self) -> Output:
         ...
 
+    # Note: I think these are the all-to-all/dense weights?
     @abstractmethod
     def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
         ...

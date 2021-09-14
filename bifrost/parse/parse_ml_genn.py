@@ -22,6 +22,7 @@ def to_synapse(layer_dict):
         syn_class = get_ir_class('DenseSynapse')
     else:
         raise NotImplementedError('Synapse Class not implemented')
+
     syn_type = layer_dict['params']['cell'].pop('synapse_type',
                                                 SynapseTypes.CURRENT)
     syn_shape = layer_dict['params']['cell'].pop('synapse_shape',
@@ -33,6 +34,11 @@ def to_cell(cell_params):
     return cell_class()
 
 def to_neuron_layer(index, network_dictionary):
+    """
+    :param index:
+    :param network_dictionary:
+    :return:
+    """
     keys = sorted(network_dictionary.keys())
     lkey = keys[index]
     ldict = copy(network_dictionary[lkey])

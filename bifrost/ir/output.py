@@ -13,6 +13,7 @@ class EthernetOutput(OutputSink):
     post: Optional[int] = 3333
 
 class DummyTestOutputSink(OutputSink):
+    # this is just needed for testing and throwing non-known source types
     pass
 
 

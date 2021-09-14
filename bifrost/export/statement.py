@@ -5,8 +5,6 @@ from typing import List, Union, Optional, Tuple
 @dataclass
 class Statement:
     value: str
-    # todo: these should be a Set so we don't get repeated imports
-    #       or deal with these repeated imports later
     imports: List[str] = ()
     preambles: List[str] = ()
 
@@ -22,22 +20,22 @@ class Statement:
 
     def __add__(self, other):
         if isinstance(other, Statement):
-            stmt = (f"{self.value}\n") if len(self.value) > 0 else ""
-            impos = list(self.imports) + list(other.imports)
-            prems = list(self.preambles) + list(other.preambles)
+            value = (f"{self.value}\n") if len(self.value) > 0 else ""
+            imports = list(self.imports) + list(other.imports)
+            preambles = list(self.preambles) + list(other.preambles)
             return Statement(
-                f"{stmt}{other.value}",
-                imports=impos, preambles=prems
+                f"{value}{other.value}",
+                imports=imports, preambles=preambles
             )
         else:
             raise ValueError("Expected Statement for addition, but found ", other)
 
     def __repr__(self) -> str:
         imports = "\n".join(self.imports)
-        sepi = "\n\n" if len(imports) > 0 else ""
+        separator_imports = "\n\n" if len(imports) > 0 else ""
         preambles = "\n".join(self.preambles)
-        sepp = "\n\n" if len(preambles) > 0 else ""
-        return f"{imports}{sepi}{preambles}{sepp}{self.value}"
+        separator_preambles = "\n\n" if len(preambles) > 0 else ""
+        return f"{imports}{separator_imports}{preambles}{separator_preambles}{self.value}"
 
 
 @dataclass

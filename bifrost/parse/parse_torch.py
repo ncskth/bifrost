@@ -30,19 +30,15 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 from bifrost.ir.constants import SynapseTypes, SynapseShapes
 from bifrost.extract.utils import try_reduce_param
-
+from bifrost.extract.torch import DONT_PARSE_THESE_MODULSE
 # todo: remove all the magic constants and move them to a common file
 
 Continuation = Callable[[Network], Network]
 
-dont_parse_classes = (
-    norse.SequentialState,
-    torch.nn.modules.loss._Loss, # loss functions
-    torch.nn.modules.batchnorm._NormBase # normalizers
-)
+
 def trimed_named_modules(torch_net: torch.nn.Module):
     def _invalid(k, modules):
-        return (isinstance(modules[k], dont_parse_classes) or k == '')
+        return (isinstance(modules[k], DONT_PARSE_THESE_MODULSE) or k == '')
 
     modules = dict(torch_net.named_modules()) # this expands inner SequentialStates
     remove_these =  [k for k in modules.keys() if _invalid(k, modules)]

@@ -1,4 +1,4 @@
-def sanitize(txt: str) -> str:
+def sanitize(in_text: str) -> str:
     _invalid = ['.', '-', ' ']
-    stxt = "".join(['_' if chr in _invalid else chr for chr in txt])
-    return stxt
+    sanitized_text = "".join(['_' if chr in _invalid else chr for chr in in_text])
+    return sanitized_text

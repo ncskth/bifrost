@@ -1,14 +1,25 @@
+"""
+This is just a utility provided so that PyTorch/Norse networks keep variables
+which are needed for sPyNNaker but are typically not stored through the state_dict
+"""
 import torch
+import norse
+DONT_PARSE_THESE_MODULES = (
+    norse.SequentialState,
+    torch.nn.modules.loss._Loss, # loss functions
+    torch.nn.modules.batchnorm._NormBase # normalizers
+)
 
 def set_parameter_buffers(model: torch.nn.Module):
     """:param model: the PyTorch network, will be modified in-line"""
-    for k0 in model._modules:
-        if isinstance(model._modules[k0], SequentialState):
-            for k1 in model._modules[k0]._modules:
-                set_parameter_buffers_per_layer(model._modules[k0]._modules[k1])
-        elif not isinstance(model._modules[k0], torch.nn.CrossEntropyLoss):
-            set_parameter_buffers_per_layer(model._modules[k0])
-
+    # NOTE: .named_modules() provides a 'flattened' network (i.e. no loops/blocks)
+    #      conveniently, modules end-up being 'links' to the actual modules in
+    #      the network/model
+    flattened_modules = dict(model.named_modules())
+    for k, module in flattened_modules.items():
+        if k == '' or isinstance(module, DONT_PARSE_THESE_MODULES):
+            continue
+        set_parameter_buffers_per_layer(module)
 
 def set_parameter_buffers_per_layer(module: torch.nn.Module):
     """:param module: a 'layer' (PyTorch module)"""

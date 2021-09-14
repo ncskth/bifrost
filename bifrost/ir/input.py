@@ -9,15 +9,15 @@ class InputSource:
 
 @dataclass
 class ImageDataset(InputSource):
-    defines: Dict[int, str] = () # keys are order, thus ints
-    # : Dict[int, str]  # keys are order, thus ints
-    imports: List[str] = ()
-    num_samples: int = 1
+    raise NotImplementedError()
+    # defines: Dict[int, str] = () # keys are order, thus ints
+    # imports: List[str] = ()
+    # num_samples: int = 1
 
 
 @dataclass
 class PoissonImageDataset(ImageDataset):
-    pass
+    raise NotImplementedError()
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):
@@ -39,8 +39,8 @@ class RandomPoissonSource(InputSource):
     rates: List[int]
 
 class DummyTestInputSource(InputSource):
+    # this is just needed for testing and throwing non-known source types
     pass
-
 
 
 @dataclass

@@ -25,7 +25,8 @@ class Layer:
 class NeuronLayer(Layer):
     cell: Cell = LIFCell()
     synapse: Synapse = StaticSynapse()
-    index: int = 0
+    index: int = 0  # todo: not sure we use this anymore
+    # note: it's easier to store layer keys here than the map in parameter context
     key: str = ""
     shape: List[int] = (1, 1)
     record: List[str] = ()
