@@ -3,7 +3,9 @@ from bifrost.parse.parse_ml_genn import (to_cell, to_synapse, to_connection,
 from bifrost.ir.constants import (SynapseTypes, SynapseShapes, NeuronTypes)
 from bifrost.ir.cell import (Cell, IFCell, LICell, LIFCell)
 from bifrost.ir.synapse import (Synapse, StaticSynapse, DenseSynapse, ConvolutionSynapse)
-
+from bifrost.ir.layer import (NeuronLayer)
+from bifrost.ir.connection import (Connector, DenseConnector, AllToAllConnector,
+                                   MatrixConnector, ConvolutionConnector)
 import pytest
 
 
@@ -19,7 +21,6 @@ def test_to_cell():
     # bifrost.ir has no cell called ABC
     with pytest.raises(NotImplementedError) as e_info:
         x = to_cell({'target': 'ABC'})
-
 
 
 def test_to_synapse():
@@ -77,4 +78,19 @@ def test_to_neuron_layer_size_vs_shape():
     # this should throw an error due to size, shape mismatch
     with pytest.raises(Exception) as e_info:
         x = to_neuron_layer(index, net_dict)
+
+
+def test_to_connectioN():
+    pre = NeuronLayer('pre', 1, 1, key='pre')
+    post = NeuronLayer('post', 1, 1, key='post')
+
+    translations = {'DenseConnector': DenseConnector,
+                    'AllToAllConnector': AllToAllConnector,
+                    'MatrixConnector': MatrixConnector,
+                    'ConvolutionConnector': ConvolutionConnector}
+    for conn_name in translations:
+        net_dict = {'post': {'connector_type': conn_name, 'params': {}}}
+        conn = to_connection(pre, post, net_dict)
+        assert isinstance(conn.connector, Connector)
+        assert isinstance(conn.connector, translations[conn_name])
 

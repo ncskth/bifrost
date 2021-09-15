@@ -14,6 +14,7 @@ class Connector:
 @dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
+    weights_key: str = "layer access key for weights"
 
 @dataclass
 class MatrixConnector(Connector):  # todo: is this the same as All-to-All?

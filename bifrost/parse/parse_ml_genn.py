@@ -44,7 +44,7 @@ def to_synapse(layer_dict):
 
 def to_cell(cell_params):
     cell_target_class = cell_params["target"]
-    if ["IFCell", "LICell", "LIFCell"]:
+    if cell_target_class in ["IFCell", "LICell", "LIFCell"]:
         cell_class = get_ir_class(cell_target_class)
     else:
         raise NotImplementedError("Cell Class not implemented")

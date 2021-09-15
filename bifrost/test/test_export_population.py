@@ -7,10 +7,11 @@ import pytest
 from norse.torch import LIFParameters
 
 from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
+from bifrost.ir.input import InputLayer, InputSource, SpiNNakerSPIFInput
+from bifrost.ir.output import OutputLayer, OutputSink
 from bifrost.ir.parameter import ParameterContext
 
-from bifrost.export import population, statement, input
+from bifrost.export import population, statement, input, output
 from bifrost.export.pynn import SIMULATOR_NAME
 from bifrost.text_utils import remove_blank as rb
 
@@ -27,6 +28,26 @@ def test_input_to_pynn():
                 f"for channel in range(1)}}")
 
     assert rb(expected) == rb(actual.value)
+
+
+def test_not_supported_input_source_to_pynn():
+    class NotSupportedInputSource(InputSource):
+        pass
+
+    input_layer = InputLayer("i", 1, 1,
+                             source=NotSupportedInputSource(shape=[2, 1]))
+    with pytest.raises(ValueError) as e_info:
+        actual = input.export_layer_input(input_layer, torch_context)
+
+
+def test_not_supported_output_sink_to_pynn():
+    class NotSupportedOutputSink(OutputSink):
+        pass
+
+    output_layer = OutputLayer("i", 1, 1,
+                               sink=NotSupportedOutputSink())
+    with pytest.raises(ValueError) as e_info:
+        actual = output.export_layer_output(output_layer, torch_context)
 
 
 def test_lif_to_pynn():
