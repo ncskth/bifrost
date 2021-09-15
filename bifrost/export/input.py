@@ -64,8 +64,7 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
          f"{variable_spaces}for channel in range({layer.channels})}}"
     )
 
-    statement = Statement(texts,
-                          imports=structure.imports)
+    statement = Statement(texts, imports=structure.imports)
     return statement
 
 

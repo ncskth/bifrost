@@ -11,13 +11,19 @@ def try_reduce_param(param):
           transparently, sPyNNaker is not the case so we just intercept
           and convert such values prior to any sPyNNaker inspection
     """
-    try:
-        if np.allclose(param[:1], param):
-            return np.asscalar(param[0])
-    except Exception as e:
-        if np.ndim(param) == 0:
+    # if dimension/length is 0
+    if np.ndim(param) == 0:
+        # if it has the item method it's a 0-dimensional array
+        if hasattr(param, 'item'):
             return param.item()
-    else:
+        # otherwise it's a simple scalar
+        else:
+            return param
+
+    # else the length of param is at least 1
+    elif np.allclose(param[:1], param):  # check if they're all close to the first value
+        return np.asscalar(param[0])
+    else: # if the values are different between each other, then just return the array
         return param
 
 

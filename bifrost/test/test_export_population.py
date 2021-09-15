@@ -12,7 +12,7 @@ from bifrost.ir.parameter import ParameterContext
 
 from bifrost.export import population, statement, input
 from bifrost.export.pynn import SIMULATOR_NAME
-from bifrost.parse.remove_blank import remove_blank as rb
+from bifrost.text_utils import remove_blank as rb
 
 torch_context = TorchContext({"l": "0"})
 

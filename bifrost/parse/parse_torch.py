@@ -35,6 +35,8 @@ from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
 
 Continuation = Callable[[Network], Network]
 
+START_OF_POPULATION_SHAPE_INDEX = -2
+CHANNEL_INDEX = 1
 
 def trimed_named_modules(torch_net: torch.nn.Module):
     def _invalid(k, modules):
@@ -125,9 +127,8 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             continue
 
         if name in ['licell', 'lifcell']:
-            size = int(np.prod(shape[-2:]))
-            # size = int(np.prod(layer_info['output_size'][-2:]))
-            channels = shape[1]
+            size = int(np.prod(shape[START_OF_POPULATION_SHAPE_INDEX:]))
+            channels = shape[CHANNEL_INDEX]
             cell = __choose_cell(mod)
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)

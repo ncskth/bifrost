@@ -27,7 +27,7 @@ def export_ethernet_output(layer: OutputLayer, context: ParameterContext[str]) -
         f"live_spikes_connection_receive = " 
         f"{SIMULATOR_NAME}.external_devices.SpynnakerLiveSpikesConnection(\n" 
         f"    receive_labels={variable_name},\n" 
-        f"    local_port=None, send_labels=None)\n"
+        f"    local_port={layer.sink.port}, send_labels=None)\n"
     )
     ethernet_output = (
             f"for channel in range({source.channels}):\n"

@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from bifrost.ir.cell import Cell, LIFCell
 from bifrost.ir.synapse import Synapse, StaticSynapse
 from typing import Dict, List, Set
-from bifrost.ir.sanitize import sanitize
+from bifrost.text_utils import sanitize
+
 
 @dataclass
 class Layer:

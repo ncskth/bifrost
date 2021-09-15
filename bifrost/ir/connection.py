@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
-from bifrost.ir.sanitize import sanitize
+from bifrost.text_utils import sanitize
 
 
 class Connector:

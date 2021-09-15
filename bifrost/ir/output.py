@@ -10,7 +10,7 @@ class OutputSink:
 @dataclass
 class EthernetOutput(OutputSink):
     host: Optional[str] = "localhost"
-    post: Optional[int] = 3333
+    port: Optional[int] = 3333
 
 class DummyTestOutputSink(OutputSink):
     # this is just needed for testing and throwing non-known source types

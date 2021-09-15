@@ -2,7 +2,8 @@ from bifrost.export.torch import TorchContext
 from bifrost.ir.connection import *
 from bifrost.export.connection import *
 from bifrost.export.pynn import SIMULATOR_NAME
-from bifrost.parse.remove_blank import remove_blank as rb
+from bifrost.text_utils import remove_blank as rb
+
 
 class MockContext(ParameterContext):
     def weights(self, layer: str, channel: int) -> str:
