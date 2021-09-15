@@ -1,76 +1,219 @@
+from typing import Callable, List, Optional, Tuple, Dict, Any
+from copy import copy
+import numpy as np
+from collections import OrderedDict
+
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]=""
+
+import torch
+torch.device("cpu")
+from torch import Tensor
+
+import pytorch_lightning as pl
+import norse.torch as norse
+
 from bifrost.export.torch import TorchContext
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
-from bifrost.ir.connection import AllToAllConnector, Connection, MatrixConnector
-from bifrost.ir.layer import LIFAlphaLayer, Layer
-from typing import Callable, List, Optional, Tuple
+from bifrost.ir.connection import (
+    AllToAllConnector, Connection, MatrixConnector, ConvolutionConnector,
+    DenseConnector, Connector
+)
+from bifrost.ir.cell import LIFCell, LICell
+from bifrost.ir.layer import NeuronLayer, Layer
+from bifrost.ir.synapse import (
+    Synapse, ConvolutionSynapse, DenseSynapse, StaticSynapse
+)
+
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
-import torch
-
-import norse.torch as norse
+from bifrost.ir.constants import SynapseTypes, SynapseShapes
+from bifrost.extract.utils import try_reduce_param
+from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
+# todo: remove all the magic constants and move them to a common file
 
 Continuation = Callable[[Network], Network]
 
+START_OF_POPULATION_SHAPE_INDEX = -2
+CHANNEL_INDEX = 1
 
-def torch_to_network(
-    model: torch.nn.Module, input_layer: InputLayer, output_layer: OutputLayer
-) -> Network:
-    if not isinstance(model, norse.SequentialState):
-        raise ValueError("Unknown model type", type(model))
+def trimed_named_modules(torch_net: torch.nn.Module):
+    def _invalid(k, modules):
+        return (isinstance(modules[k], DONT_PARSE_THESE_MODULES) or k == '')
 
-    default_network = Network(layers=[input_layer], connections=[])
+    # this expands inner SequentialStates
+    modules = dict(torch_net.named_modules())
+    remove_these =  [k for k in modules.keys() if _invalid(k, modules)]
+    for k in remove_these:
+        del modules[k]
 
-    network = module_to_ir(
-        modules=list(model.children()), index=0, network=default_network
-    )
-
-    return Network(
-        layers=network.layers + [output_layer],
-        connections=network.connections
-        + [
-            Connection(
-                pre=network.layers[-1], post=output_layer, connector=MatrixConnector("0")
-            )
-        ],
-    )
+    return modules
 
 
-def torch_to_context(modules: List[torch.nn.Module]) -> ParameterContext[str]:
-    layer_map = {"0": "0", "1": "1"}
-    return TorchContext(layer_map)
+def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[str, torch.Size]:
+    input_layer = network.layers[0] # assuming the first layer is of input type
+    # Batch size, Number of Channels, Height, Width
+    # this has to be in [e.g. (8, 3, 28, 28)] BCYX format
+    input_shape = (1, input_layer.channels, *input_layer.source.shape)
+
+    shapes = {}
+    x = torch.randn(input_shape)
+    for i, k in enumerate(modules):
+        print(k)
+        x = modules[k](x)
+
+        # first is output of previous layer, second is the state
+        if isinstance(x, tuple):
+            x = x[0]
+        shapes[k] = x.data.shape
+    return shapes
 
 
-def module_to_ir(
-    modules: List[torch.nn.Module],
-    index: int,
-    network: Network,
-) -> Network:
-    if len(modules) == 0:
-        return network
-    if isinstance(modules[0], torch.nn.Linear):
-        assert (
-            len(modules) > 0
-        ), "Linear layer requires output connection, but was final layer"
-        linear = modules[0]
-        out = module_to_layer(modules[1], index + 1, 1, linear.out_features)
-        connection = Connection(
-            pre=network.layers[-1], post=out, connector=MatrixConnector(str(index))
-        )
-        network = Network(
-            layers=network.layers + [out],
-            connections=network.connections
-            + [connection],
-        )
-        return module_to_ir(modules[2:], index + 2, network)
+def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
+        output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
+
+    if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
+            raise ValueError("Unknown model type", type(model))
+
+    runtime = config.get('runtime', -1.0)  # run forever if not specified
+    timestep = config.get("timestep", 1.0)
+
+    net_dict = trimed_named_modules(model)
+
+    default_network = Network(layers=[input_layer], connections=[],
+                              runtime=runtime, timestep=timestep)
+
+    network = module_to_ir(modules=net_dict, network=default_network)
+
+    if output_layer is not None:
+        output_layer.source = network.layers[-1]
+        network.layers.append(output_layer)
+
+    return network
+
+
+def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterContext[str]:
+    net_dict = trimed_named_modules(torch_net)
+
+    state_dict = torch_net.state_dict(keep_vars=True)
+    weight_keys = set(['.'.join(k.split('.')[:-1]) for k in state_dict.keys()])
+
+    keys = list(net_dict.keys())
+    layer_map = {}
+    last_stride_idx = 0
+
+    for idx, layer in enumerate(net.layers):
+        if isinstance(layer, InputLayer):
+            continue
+        map_key = str(layer)
+        layer_map[map_key] = layer.key
+
+    return TorchContext(layer_map), {'state_dict': state_dict}
+
+
+def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Network:
+    shapes = get_shapes(modules, network)
+    layer_map = {}
+    layers = network.layers
+    connections = network.connections
+    keys = list(modules.keys())
+    last_neuron_idx = -1
+    for idx, k in enumerate(keys):
+        mod = modules[k]
+        shape = shapes[k]
+        name = mod.__class__.__name__.lower()
+        if name in ['conv2d', 'avgpool2d', 'linear']:
+            continue
+
+        if name in ['licell', 'lifcell']:
+            size = int(np.prod(shape[START_OF_POPULATION_SHAPE_INDEX:]))
+            channels = shape[CHANNEL_INDEX]
+            cell = __choose_cell(mod)
+            connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
+            synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
+            post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
+                               synapse=synapse, key=k)
+            conn = Connection(layers[-1], post, connector)
+
+            layers.append(post)
+            connections.append(conn)
+
+            last_neuron_idx = idx
+            continue
+
+        # this should not be reached
+        raise ValueError("Unknown torch module ", name)
+
+    return network
+
+
+def __choose_cell(module: torch.nn.Module):
+    # neuron types for Norse (LI or LIF) have an attribute for parameters, this
+    # also dictates which 'cell' type we use
+    # todo: I think this is somewhat wrong --- need help
+    parameter_class_name = module.p.__class__.__name__.lower()
+    if 'liparameters' in parameter_class_name:
+        return LICell()
     else:
-        raise ValueError("Unknown torch module", modules[0])
+        return LIFCell()  # default
 
 
-def module_to_layer(
-    module: torch.nn.Module, index: int, input_channels: int, input_neurons: int
-) -> Layer:
-    if isinstance(module, norse.LIFCell):
-        return LIFAlphaLayer(str(index), input_channels, input_neurons)
-    else:
-        raise ValueError("Unknown torch module layer", module)
+def __choose_synapse_shape(torch_params):
+    if hasattr(torch_params, 'alpha'):
+        return SynapseShapes.ALPHA
+    else:  # note: do we support delta?
+        return SynapseShapes.EXPONENTIAL
+
+
+def __get_synapse(start_index: int, end_index: int, keys: List[str],
+                  modules: Dict[str, torch.nn.Module]) -> Synapse:
+    synapse = None
+    for layer_index in range(start_index, end_index):
+        k = keys[layer_index]
+        module_class_name = modules[k].__class__.__name__.lower()
+        if 'conv2d' in module_class_name:
+            synapse = ConvolutionSynapse()
+            break
+        elif 'dense' in module_class_name:
+            synapse = DenseSynapse()
+            break
+        elif 'linear' in module_class_name:
+            synapse = StaticSynapse()
+            break
+        elif 'avgpool2d' in module_class_name:  # these usually come after conv2d
+            continue
+        # this should not be reached
+        raise ValueError("Unknown connector", module_class_name)
+
+    # end index is always the one for a Cell (LI or LIF)
+    module = modules[keys[end_index]]
+    synapse.synapse_shape = __choose_synapse_shape(module.p)
+    # note: seems we only support current synapse types as of now (7/9/21)
+    return synapse
+
+
+def __get_connector(start_idx: int, end_idx: int, keys: List[str],
+                    modules: Dict[str, torch.nn.Module]) -> Connector:
+    pool_index = None
+    connector = None
+    for conn_idx in range(start_idx, end_idx):
+        k = keys[conn_idx]
+        module_class_name = modules[k].__class__.__name__.lower()
+        pool_key = '' if pool_index is None else str(pool_index)
+        if 'conv2d' in module_class_name:
+            connector = ConvolutionConnector(str(k), pooling_key=pool_key)
+            break
+        elif 'dense' in module_class_name:
+            connector = DenseConnector(str(k), pooling_key=pool_key)
+            break
+        elif 'linear' in module_class_name:
+            connector = MatrixConnector(str(k))
+            break
+        elif 'avgpool2d' in module_class_name:
+            pool_index = k
+            continue
+        # this should not be reached
+        raise ValueError("Unknown connector", module_class_name)
+
+    return connector

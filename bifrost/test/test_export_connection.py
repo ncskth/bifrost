@@ -1,7 +1,8 @@
-from norse.torch.functional.lif import LIFParameters
 from bifrost.export.torch import TorchContext
 from bifrost.ir.connection import *
 from bifrost.export.connection import *
+from bifrost.export.pynn import SIMULATOR_NAME
+from bifrost.text_utils import remove_blank as rb
 
 
 class MockContext(ParameterContext):
@@ -21,11 +22,28 @@ torch_context = TorchContext({"layer.weights": "lw"})
 #     assert len(export_connector(cc, "x", c)[0].imports) == 0
 #     assert export_connector(cc, "x", c)[1] is None
 
-
+# weights are specified in torch way, need to add test for ml_genn
 def test_matrix_connection_to_pynn():
-    l1 = LIFAlphaLayer("x", 1, 1)
-    l2 = LIFAlphaLayer("y", 1, 1)
-    c = Connection(l1, l2, MatrixConnector("layer.weights"), StaticSynapse())
-    actual = export_connection(c, torch_context)
-    assert str(actual) == "c_x_y_0 = p.Projection(l_x_0, l_y_0, p.AllToAllConnector(), p.StaticSynapse())\nc_x_y_0.set(weight=_params['lw'][:0])"
+    l1 = NeuronLayer("x", 1, 1)
+    l2 = NeuronLayer("y", 1, 1)
+    torch_context = TorchContext({"l_x_1_1": "0", "l_y_1_1": "lw"})
+    c = Connection(l1, l2, MatrixConnector("layer.weights"))
+    var = 'c_x___to__y_'
+    actual = export_connection(c, torch_context, join_str=", ", spaces=0)
+    # projections end in a line break
+    expected = (
+        f"{var} = {{channel_in:{{channel_out:{SIMULATOR_NAME}.Projection("
+        f"l_x_1_[channel_in], l_y_1_[channel_out], " 
+        f"{SIMULATOR_NAME}.AllToAllConnector(), {SIMULATOR_NAME}.StaticSynapse())" 
+        f"for channel_out in range(1)}} for channel_in in range(1)}}" 
+        f"for channel_in in range(1):"
+        f"  for channel_out in range(1):"
+        f"     {var}[channel_in][channel_out].set(" 
+        f"     weight=_params[\"layer.weights.weight\"]"
+        f"            [channel_out, channel_in].detach().numpy())"
+                      # seems like torch uses inverted channels
+
+    )
+
+    assert rb(str(actual)) == rb(expected)
     assert len(actual.imports) == 0

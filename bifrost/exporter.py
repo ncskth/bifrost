@@ -12,21 +12,26 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     ]
 
     statements = []
-    imports = set()
+    imports = set(pynn.pynn_imports + context.imports)
+    preambles = set()
     for stmt in pynn_layers + connections:
         if stmt is not None:
             statements.append(stmt.value)
-            imports = imports | set(stmt.imports)
+            imports |= set(stmt.imports)
+            preambles |= set(stmt.preambles)
 
+    # imports
+    imps = "\n".join(sorted(list(imports)))
     # Header
-    header = pynn.pynn_header(timestep=network.timestep) + "\n" + context.preamble
+    header = f"{pynn.pynn_header(timestep=network.timestep)}\n{context.preamble}"
     if len(network.config) > 0:
-        header += "\n" + "\n".join(network.config)
+        cfg = '\n'.join(network.config)
+        header = f"{header}\n{cfg}"
 
     # Body
-    body = "\n".join(list(imports) + statements)
+    body = "\n".join(list(preambles) + statements)
 
     # Footer
     footer = pynn.pynn_footer(runtime=network.runtime)
 
-    return "\n".join([header, body, footer])
+    return "\n".join([imps, header, body, footer])
