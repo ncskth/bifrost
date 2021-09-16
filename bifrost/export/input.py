@@ -78,25 +78,54 @@ def export_dummy_test_input(layer: InputLayer, ctx: ParameterContext[str]) -> St
 
 
 def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
+    tab = " " * 4
     source = layer.source
-    parameter_function_name = "__nrn_params_"
-    parameter_defines = [
-        f"def {parameter_function_name}{layer.variable(channel)}():\n"
-        f"    return dict()\n"
-        for channel in range(layer.channels)
-    ]
-    structure = export_structure(layer.source) # in this case the struct has the shape
-    statement = Statement([
-            (f"{layer.variable(channel)} = {SIMULATOR_NAME}.Population({layer.size}, \n"
-             f"    {SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-             f"        **{parameter_function_name}{layer.variable(channel)}()), \n"
-             f"    structure={structure.value}, \n"
-             f"    label=\"{layer.variable(channel)}\") \n")
-            for channel in range(layer.channels)
-        ],
-        imports=structure.imports,
-        preambles=parameter_defines + list(structure.preambles)
+    start_sample = source.start_sample
+    n_samples = source.num_samples
+    variable_name = layer.variable("")
+    parameter_function_name = f"__poisson_params_{variable_name}"
+    load_function_name = f"__load_images_{variable_name}"
+    load_function_text = (
+        f"def {load_function_name}(start_sample, num_samples, num_channels):\n"
+        f"{source.load_command_body}\n"
+        "__images_dictionary, __classes = "
+        f"{load_function_name}({start_sample}, {n_samples}, {layer.channels})\n"
     )
+
+    transform_function_name = f"__images_to_rate_{variable_name}"
+    transform_function_text = (
+        f"def {transform_function_name}(images_dictionary):\n"
+        f"{source.pixel_to_rate_transform}\n\n"
+        f"__rates_dictionary = {transform_function_name}(__images_dictionary)\n"
+    )
+    on_time_ms = source.on_time_ms
+    period_ms = on_time_ms + source.off_time_ms
+    parameter_defines = ["\n".join(
+        [f"def {parameter_function_name}(channel, rates_dictionary):",
+         f"{tab}durations = np.ones(({layer.size}, {n_samples})) * {on_time_ms}",
+         f"{tab}starts = np.repeat([np.arange({n_samples}) * {period_ms}], {layer.size}, axis=0)",
+         f"{tab}return {{\"rates\": rates_dictionary[channel],",
+         f"{tab * 3}\"durations\": durations, \"starts\": starts}}\n",]
+    )]
+
+    structure = export_structure(layer.source) # in this case the struct has the shape
+    statement_text = (
+        f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({layer.size}, \n"
+        f"{tab}{SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
+        f"{tab * 2}**{parameter_function_name}(channel, __rates_dictionary)), \n"
+        f"{tab}structure={structure.value}, \n"
+        f"{tab}label=f\"{variable_name}{{channel}}\") \n"
+        f"{tab}for channel in range({layer.channels})}}\n"
+    )
+    source_defines_keys = sorted(source.defines.keys())
+    sorted_source_defines = [source.defines[i] for i in source_defines_keys]
+    load_transform = [load_function_text, transform_function_text]
+    preambles = ["\n".join(load_transform + sorted_source_defines)]
+    statement = Statement(statement_text,
+        imports=structure.imports + source.imports,
+        preambles=parameter_defines + list(structure.preambles) + preambles
+    )
+
 
     return statement
 
