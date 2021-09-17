@@ -12,3 +12,5 @@ class Network:
     runtime: float = -1.0  # Default to infinity
     timestep: float = 1.0  # Default to 1ms
     config: List[str] = ()
+    # this will be used as the recordings output filename as well
+    name: str = "Bifrost Network"

@@ -1,15 +1,20 @@
 from enum import Enum
 
 class SynapseTypes(Enum):  # current transfer
-    CURRENT = 'current'
-    CONDUCTANCE = 'conductance'
+    CURRENT:str = "current"
+    CONDUCTANCE:str = "conductance"
 
 class SynapseShapes(Enum): # post-synaptic potential (kernel?) shape
-    EXPONENTIAL = 'exponential'
-    ALPHA = 'alpha'
-    DELTA = 'delta'
+    EXPONENTIAL:str = "exponential"
+    ALPHA:str = "alpha"
+    DELTA:str = "delta"
 
 class NeuronTypes(Enum):
-    LI = 'LI'  # leaky-integrate neuron (DOESN'T FIRE)
-    LIF = 'LIF'  # leaky-integrate and fire neuron
-    NIF = 'NIF'  # (NON-leaky) integrate and fire neuron
+    LI:str = "LI"  # leaky-integrate neuron (DOESN"T FIRE)
+    LIF:str = "LIF"  # leaky-integrate and fire neuron
+    NIF:str = "NIF"  # (NON-leaky) integrate and fire neuron
+
+class DefaultLayerKeys(Enum):
+    POOLING:str = "parameter context layer key for pooling"
+    STRIDE:str = "parameter context layer key for strides"
+    WEIGHT:str = "parameter context layer key for weights"

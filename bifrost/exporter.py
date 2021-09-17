@@ -1,4 +1,6 @@
 from typing import TypeVar
+
+import bifrost.export.record
 from bifrost.ir.parameter import ParameterContext
 from bifrost.export import connection, population, pynn
 from bifrost.ir.layer import Layer
@@ -31,7 +33,13 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     # Body
     body = "\n".join(list(preambles) + statements)
 
-    # Footer
-    footer = pynn.pynn_footer(runtime=network.runtime)
+    # Simulation run
+    runner = pynn.pynn_runner(runtime=network.runtime)
 
-    return "\n".join([imps, header, body, footer])
+    # Grab recordings
+    get_records = bifrost.export.record.export_save_recordings(network).value
+
+    # Footer
+    footer = pynn.pynn_footer()
+
+    return "\n".join([imps, header, body, runner, get_records, footer])

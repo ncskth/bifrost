@@ -8,16 +8,14 @@ SIMULATOR_NAME = "spynn"
 pynn_imports = [f"import spynnaker8 as {SIMULATOR_NAME}"]
 
 def pynn_header(timestep=1.0):
-    return f"""
-{SIMULATOR_NAME}.setup({timestep})
-"""
+    return f"{SIMULATOR_NAME}.setup({timestep})\n"
 
-def pynn_footer(runtime):
-    return f"""
-run_time = {runtime}  # ms
-{SIMULATOR_NAME}.run(run_time)
-{SIMULATOR_NAME}.end()
-"""
+def pynn_runner(runtime):
+    return (f"run_time = {runtime}  # ms\n"
+            f"{SIMULATOR_NAME}.run(run_time)\n")
+
+def pynn_footer():
+    return f"{SIMULATOR_NAME}.end()\n"
 
 
 class PyNNSynapseTypes(Enum):  # current transfer
