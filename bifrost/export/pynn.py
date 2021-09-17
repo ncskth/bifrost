@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import Dict, Tuple, List, Any
 from bifrost.export.statement import Statement
 from bifrost.ir import Layer
 
@@ -37,3 +37,17 @@ def export_structure(layer: Layer) -> Statement:
     ratio = float(layer.shape[1]) / layer.shape[0]
     return Statement(f"Grid2D({ratio})",
                      imports=['from pyNN.space import Grid2D'])
+
+
+def export_constraints(constraints: Dict[str, Any]) -> Statement:
+    if 'max_neurons' in constraints:
+        return export_max_neurons_per_core(constraints['max_neurons'])
+
+    return Statement()
+
+
+def export_max_neurons_per_core(constraints: List[Tuple[str, Any]]) -> Statement:
+    template = f"{SIMULATOR_NAME}.set_number_of_neurons_per_core({SIMULATOR_NAME}.{{}}, {{}})"
+    return Statement(
+        [template.format(cell_name, limit) for cell_name, limit in constraints] + [""]
+    )

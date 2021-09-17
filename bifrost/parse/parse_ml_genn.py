@@ -94,6 +94,7 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
     runtime = config.get("runtime", -1.0)  # run forever if not specified
     timestep = config.get("timestep", model.g_model.dT)  # override timestep
+    constraints = config.get('constraints', {})
     net_dict = extract_all(model)
     layers = []
     net_map = {}
@@ -108,7 +109,7 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
              for i in range(len(layers[:-1]))]
 
     network = Network(layers=layers, connections=conns, timestep=timestep,
-                      runtime=runtime)
+                      runtime=runtime, constraints=constraints)
 
     if output_layer is not None:
         output_layer.source = network.layers[-1]

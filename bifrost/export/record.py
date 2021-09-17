@@ -40,7 +40,7 @@ def export_save_recordings(network: Network):
         save_filename = f"{sanitize(network.name)}_recordings.npz"
         save_output_text = f"np.savez_compressed(\"{save_filename}\", **{variable_name})"
         statement_text = (
-            f"{variable_name} = {{{variable_init_text}\n}}\n"
+            f"{variable_name} = {{\n{tab}{variable_init_text}\n}}\n"
             f"{save_output_text}\n"
         )
         return Statement(statement_text, imports=["import numpy as np"])
