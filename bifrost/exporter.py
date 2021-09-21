@@ -32,7 +32,7 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     header = f"{pynn.pynn_header(timestep=network.timestep)}{context.preamble}"
 
     # Configs (after setup in PyNN)
-    config = export_configurations(network.configuration)
+    config = export_configurations(network.configuration).value
 
     # Body
     body = "\n".join(list(preambles) + statements)

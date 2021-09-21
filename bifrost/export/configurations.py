@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Tuple
-
+from enum import Enum
 from bifrost.export.pynn import SIMULATOR_NAME
 from bifrost.export.statement import Statement
 
@@ -11,9 +11,9 @@ def export_configurations(configurations: Dict[str, Any]) -> Statement:
     # todo: if we support multiple output simulator front-ends, this will have
     #  to become a per-platform export
     statement = Statement()
-    for config in configruations:
+    for config in configurations:
         if config in SUPPORTED_CONFIGS:
-            statement += export_max_neurons_per_core(constraints[config])
+            statement += export_max_neurons_per_core(configurations[config])
         else:
             warn(f"Configuration {config} is not supported!")
 
@@ -36,5 +36,5 @@ def export_max_neurons_per_core(configuration: List[Tuple[str, Any]]) -> Stateme
     """
     template = f"{SIMULATOR_NAME}.set_number_of_neurons_per_core({SIMULATOR_NAME}.{{}}, {{}})"
     return Statement(
-        [template.format(cell_name, limit) for cell_name, limit in constraints] + [""]
+        [template.format(cell_name, limit) for cell_name, limit in configuration] + [""]
     )
