@@ -9,16 +9,17 @@ class InputSource:
 
 @dataclass
 class ImageDataset(InputSource):
-    pass
-    # todo: Implement
-    # defines: Dict[int, str] = () # keys are order, thus ints
-    # imports: List[str] = ()
-    # num_samples: int = 1
+    defines: Dict[int, str]  # keys are order, thus ints
+    imports: List[str]
+    load_command_body: str
+    start_sample: int
+    num_samples: int
 
 @dataclass
 class PoissonImageDataset(ImageDataset):
-    pass
-    # todo: Implement
+    pixel_to_rate_transform: str
+    on_time_ms: float  # milliseconds
+    off_time_ms: float  # milliseconds
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):

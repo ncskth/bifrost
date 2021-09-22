@@ -19,12 +19,12 @@ def to_dict(np_file):
 _params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
 _param_map = {
-    "v_rest": lambda v: ("v_rest", v),
+    "v_reset": lambda v: ("v_reset", v),
     "v_thresh": lambda v: ("v_thresh", v),
 }
     """
 
-    if_parameters = ['v_thresh', 'v_rest']
+    if_parameters = ['v_thresh', 'v_reset']
 
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map

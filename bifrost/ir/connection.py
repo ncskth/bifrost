@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 
 from bifrost.ir.layer import Layer
 from bifrost.text_utils import sanitize
-
+from bifrost.ir.constants import DefaultLayerKeys
 
 class Connector:
     pass
@@ -14,21 +14,21 @@ class Connector:
 @dataclass
 class AllToAllConnector(Connector):
     """Also Known As DenseConnector"""
-    weights_key: str = "layer access key for weights"
+    weights_key: str = DefaultLayerKeys.WEIGHT
 
 @dataclass
 class MatrixConnector(Connector):  # todo: is this the same as All-to-All?
-    weights_key: str = "layer access key for weights"
+    weights_key: str = DefaultLayerKeys.WEIGHT
 
 @dataclass
 class DenseConnector(Connector):
-    weights_key: str = "layer access key for weights"
-    pooling_key: str = "layer access key for pooling"
+    weights_key: str = DefaultLayerKeys.WEIGHT
+    pooling_key: str = DefaultLayerKeys.POOLING
 
 @dataclass
 class ConvolutionConnector(Connector):
-    weights_key: str = "layer access key for weights"
-    pooling_key: str = "layer access key for pooling"
+    weights_key: str = DefaultLayerKeys.WEIGHT
+    pooling_key: str = DefaultLayerKeys.POOLING
 
 
 From = TypeVar("From", Layer, Layer)

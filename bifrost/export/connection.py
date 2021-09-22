@@ -1,6 +1,7 @@
 from typing import Optional, Tuple
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.layer import NeuronLayer, Layer
+from bifrost.ir.constants import DefaultLayerKeys
 from bifrost.ir.connection import (
     Connection, ConvolutionConnector, MatrixConnector, DenseConnector)
 from bifrost.export.statement import Statement, ConnectionStatement
@@ -57,7 +58,7 @@ def export_synapse(connection: Connection[Layer, Layer]) -> Statement:
     if isinstance(synapse, ConvolutionSynapse):
         return Statement(f"{SIMULATOR_NAME}.Convolution()")
     elif isinstance(synapse, DenseSynapse):
-        return Statement(f"{SIMULATOR_NAME}.Dense()")
+        return Statement(f"{SIMULATOR_NAME}.PoolDense()")
     elif isinstance(synapse, StaticSynapse):
         return Statement(f"{SIMULATOR_NAME}.StaticSynapse()")
     else:
@@ -100,8 +101,11 @@ def export_conv(connection: Connection[Layer, Layer],
     weights = context.conv2d_weights(
                 connector.weights_key, channel_in, channel_out)
     strides = context.conv2d_strides(connector.weights_key)
-    pool_shape, pool_stride = (context.conv2d_pooling(connector.pooling_key)
-                               if len(connector.pooling_key) else (None, None))
+    pool_shape, pool_stride = (
+        context.conv2d_pooling(connector.pooling_key)
+        if (connector.pooling_key != DefaultLayerKeys.POOLING)
+        else ('None', 'None')
+    )
     padding = context.conv2d_padding(connector.weights_key)
     stt = [f"{SIMULATOR_NAME}.ConvolutionConnector({weights}",
         f"strides={strides}",
@@ -119,11 +123,14 @@ def export_dense(connection: Connection[Layer, Layer],
     spaces_text = " " * spaces
     connector = connection.connector
     weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
-    pool_shape, pool_stride = (context.conv2d_pooling(connector.pooling_key)
-                               if len(connector.pooling_key) else ('None', 'None'))
+    pool_shape, pool_stride = (
+        context.conv2d_pooling(connector.pooling_key)
+        if (connector.pooling_key != DefaultLayerKeys.POOLING)
+        else ('None', 'None')
+    )
     # todo: pool padding here needs to be added but I'm not sure if truly needed
     return ConnectionStatement(
-        f"{SIMULATOR_NAME}.DenseConnector({weights}, \n"
+        f"{SIMULATOR_NAME}.PoolDenseConnector({weights}, \n"
         f"{spaces_text}pool_shape={pool_shape}, \n"
         f"{spaces_text}pool_stride={pool_stride})",
     )

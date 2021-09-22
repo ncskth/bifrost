@@ -1,5 +1,5 @@
 from bifrost.export.output import export_layer_output
-from bifrost.export.utils import export_list, export_list_var
+from bifrost.export.utils import export_list_var
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
@@ -10,7 +10,7 @@ from bifrost.export.statement import Statement
 from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
                                  PyNNSynapseTypes, PyNNNeuronTypes, export_structure)
 from bifrost.export.input import export_layer_input
-from bifrost.export.record import export_record
+from bifrost.export.record import (export_record)
 
 
 def export_cell_params(layer: Layer, context: ParameterContext[str],
@@ -136,7 +136,5 @@ def get_pynn_cell_type(cell, synapse):
                 f"Synapse 'shape' not yet available {synapse.synapse_shape}")
 
     return "{}_{}_{}".format(cell_type, syn_type, syn_shape)
-
-
 
 

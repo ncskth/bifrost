@@ -1,8 +1,13 @@
 from typing import TypeVar
+
+from bifrost.export.configurations import export_configurations
+from bifrost.export.record import export_save_recordings
 from bifrost.ir.parameter import ParameterContext
 from bifrost.export import connection, population, pynn
 from bifrost.ir.layer import Layer
 from bifrost.ir.network import Network
+
+
 
 
 def export_network(network: Network, context: ParameterContext[str]) -> str:
@@ -21,17 +26,24 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
             preambles |= set(stmt.preambles)
 
     # imports
-    imps = "\n".join(sorted(list(imports)))
-    # Header
-    header = f"{pynn.pynn_header(timestep=network.timestep)}\n{context.preamble}"
-    if len(network.config) > 0:
-        cfg = '\n'.join(network.config)
-        header = f"{header}\n{cfg}"
+    imps = "\n".join(sorted(list(imports)) + [""])
+
+    # Header (simulator.setup + whatever context needs to function)
+    header = f"{pynn.pynn_header(timestep=network.timestep)}{context.preamble}"
+
+    # Configs (after setup in PyNN)
+    config = export_configurations(network.configuration).value
 
     # Body
     body = "\n".join(list(preambles) + statements)
 
-    # Footer
-    footer = pynn.pynn_footer(runtime=network.runtime)
+    # Simulation run
+    runner = pynn.pynn_runner(runtime=network.runtime)
 
-    return "\n".join([imps, header, body, footer])
+    # Grab recordings
+    get_records = export_save_recordings(network).value
+
+    # Footer
+    footer = pynn.pynn_footer()
+
+    return "\n".join([imps, header, config, body, runner, get_records, footer])
