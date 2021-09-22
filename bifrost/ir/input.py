@@ -25,6 +25,15 @@ class ImageDataset(InputSource):
     def num_samples_variable(self):
         return "__num_samples"
 
+    @property
+    def images_variable(self):
+        return "__images_dictionary"
+
+    @property
+    def classes_variable(self):
+        return "__classes"
+
+
 @dataclass
 class PoissonImageDataset(ImageDataset):
     pixel_to_rate_transform: str

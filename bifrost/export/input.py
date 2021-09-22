@@ -89,11 +89,13 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     )
     parameter_function_name = f"__poisson_params_{variable_name}"
     load_function_name = f"__load_images_{variable_name}"
+    images_variable_name = source.images_variable
+    classes_variable_name = source.classes_variable
     load_function_text = (
         f"{preamble}\n"
         f"def {load_function_name}(start_sample, num_samples, num_channels):\n"
         f"{source.load_command_body}\n"
-        "__images_dictionary, __classes = "
+        f"{images_variable_name}, {classes_variable_name} = "
         f"{load_function_name}({start_var}, {n_samp_var}, {n_chan_var})\n"
     )
 
@@ -149,6 +151,7 @@ def export_input_configuration(layer: InputLayer) -> Statement:
             f"\"num_samples\": {source.num_samples}",
             f"\"on_time_ms\": {source.on_time_ms}",
             f"\"off_time_ms\": {source.off_time_ms}",
+            f"\"target_classes\": {source.classes_variable}"
         ])
 
     config_text = f",\n{TAB}".join(config_data)
