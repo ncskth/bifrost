@@ -1,11 +1,13 @@
 from bifrost import ir as IR
 from bifrost.extract.ml_genn.extractor import extract_all
+from bifrost.export.ml_genn import MLGeNNContext
 from bifrost.ir import (NeuronLayer, Cell, Connection)
 from bifrost.ir.network import Network
 from bifrost.ir.output import OutputLayer
-from bifrost.ir.input import InputLayer
+from bifrost.ir.input import InputLayer, ImageDataset, PoissonImageDataset
 from bifrost.ir.constants import (SynapseTypes, SynapseShapes, NeuronTypes)
-from bifrost.export.ml_genn import MLGeNNContext
+from bifrost.parse.utils import adjust_runtime
+from bifrost.parse.constants import DEFAULT_RUNTIME, DEFAULT_DT
 from typing import List, Dict, Any
 from copy import copy
 import numpy as np
@@ -92,9 +94,12 @@ def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
 
 def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
-    runtime = config.get("runtime", -1.0)  # run forever if not specified
+    # don't run if  no time is specified
+    runtime = adjust_runtime(config.get("runtime", DEFAULT_DT),
+                             input_layer)
     timestep = config.get("timestep", model.g_model.dT)  # override timestep
     configuration = config.get('configuration', {})
+
     net_dict = extract_all(model)
     layers = []
     net_map = {}

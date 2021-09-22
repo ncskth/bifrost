@@ -42,15 +42,22 @@ def export_cell_params(layer: Layer, context: ParameterContext[str],
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
-        return export_layer_spif(layer, context)
+        statement = export_layer_spif(layer, context)
     elif isinstance(layer, NeuronLayer):
-        return export_layer_neuron(layer, context)
+        statement = export_layer_neuron(layer, context)
     elif isinstance(layer, InputLayer):
-        return export_layer_input(layer, context)
+        statement = export_layer_input(layer, context)
     elif isinstance(layer, OutputLayer):
-        return export_layer_output(layer, context)
+        statement = export_layer_output(layer, context)
     else:
         raise ValueError("Unknown layer type", layer)
+
+    if len(layer.record):
+        statement += export_record(layer)
+
+    # just add a break to separate populations for each layer
+    statement += Statement("")
+    return statement
 
 
 def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
@@ -74,12 +81,6 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     statement = Statement(population_text,
                           imports=neuron.imports,
                           preambles=neuron.preambles)
-
-    if len(layer.record):
-        statement += export_record(layer)
-
-    # just add a break to separate populations for each layer
-    statement += Statement("")
 
     if isinstance(statement.imports, tuple):
         statement.imports = structure.imports

@@ -31,6 +31,9 @@ from bifrost.ir.network import Network
 from bifrost.ir.constants import SynapseTypes, SynapseShapes
 from bifrost.extract.utils import try_reduce_param
 from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
+from bifrost.parse.utils import adjust_runtime
+from bifrost.parse.constants import DEFAULT_RUNTIME, DEFAULT_DT
+
 # todo: remove all the magic constants and move them to a common file
 
 Continuation = Callable[[Network], Network]
@@ -76,8 +79,11 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
             raise ValueError("Unknown model type", type(model))
 
-    runtime = config.get('runtime', -1.0)  # run forever if not specified
-    timestep = config.get("timestep", 1.0)
+    # don't run if  no time is specified
+    runtime = adjust_runtime(config.get('runtime', DEFAULT_RUNTIME),
+                             input_layer)
+    timestep = config.get("timestep", DEFAULT_DT)
+    configuration = config.get('configuration', {})
 
     net_dict = trimed_named_modules(model)
 

@@ -1,14 +1,15 @@
 from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import (InputLayer, SpiNNakerSPIFInput,
                               DummyTestInputSource, PoissonImageDataset,
-                              RandomPoissonSource)
+                              RandomPoissonSource, ImageDataset)
 from bifrost.ir.parameter import ParameterContext
 from bifrost.export.statement import Statement
-from bifrost.export.record import export_record
 from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
                                  PyNNSynapseTypes, PyNNNeuronTypes, export_structure)
 from bifrost.export.utils import export_list
+from bifrost.text_utils import TAB
 import numpy as np
+
 
 def export_layer_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     source = layer.source
@@ -31,12 +32,11 @@ def export_spif_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statemen
     source = layer.source
     variable_name = f"{layer.variable('')}"
     variable_spaces = " " * (len(variable_name) + 4)
-    tab = " " * 4
     texts = (f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population(None, \n"  
-         f"{variable_spaces}{tab}{SIMULATOR_NAME}.external_devices.SPIFRetinaDevice(\n"  
-         f"{variable_spaces}{tab}{tab}base_key=channel,width={source.x},height={source.y},\n"  
-         f"{variable_spaces}{tab}{tab}sub_width={source.x_sub},sub_height={source.y_sub},\n"
-         f"{variable_spaces}{tab}{tab}input_x_shift={source.x_shift},input_y_shift={source.y_shift}))\n"
+         f"{variable_spaces}{TAB}{SIMULATOR_NAME}.external_devices.SPIFRetinaDevice(\n"  
+         f"{variable_spaces}{TAB}{TAB}base_key=channel,width={source.x},height={source.y},\n"  
+         f"{variable_spaces}{TAB}{TAB}sub_width={source.x_sub},sub_height={source.y_sub},\n"
+         f"{variable_spaces}{TAB}{TAB}input_x_shift={source.x_shift},input_y_shift={source.y_shift}))\n"
          f"{variable_spaces}for channel in range({layer.channels})}}"
     )
 
@@ -48,7 +48,6 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
     source = layer.source
     variable_name = f"{layer.variable('')}"
     variable_spaces = " " * (len(variable_name) + 4)
-    tab = " " * 4
     size = int(np.prod(source.shape))
     if len(source.rates) > 1:
         rl = export_list(source.rates, q="")
@@ -58,9 +57,9 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
 
     structure = export_structure(source)
     texts = (f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({size}, \n"  
-         f"{variable_spaces}{tab}{SIMULATOR_NAME}.SpikeSourcePoisson(\n"
-         f"{variable_spaces}{tab}rate={rates}),\n"
-         f"{variable_spaces}{tab}structure={structure.value})\n"
+         f"{variable_spaces}{TAB}{SIMULATOR_NAME}.SpikeSourcePoisson(\n"
+         f"{variable_spaces}{TAB}rate={rates}),\n"
+         f"{variable_spaces}{TAB}structure={structure.value})\n"
          f"{variable_spaces}for channel in range({layer.channels})}}"
     )
 
@@ -70,26 +69,32 @@ def export_random_poisson_input(layer: InputLayer, ctx: ParameterContext[str]) -
 
 def export_dummy_test_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
     population = [f"{layer.variable('')} = {{0: DummyInputSource()}}"]
-    recording = export_record(layer)
     statement = Statement(population)
-    if len(recording.value):
-        statement += recording
     return statement
 
 
 def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[str]) -> Statement:
-    tab = " " * 4
     source = layer.source
     start_sample = source.start_sample
     n_samples = source.num_samples
+    n_channels = layer.channels
     variable_name = layer.variable("")
+    start_var = source.start_sample_variable
+    n_samp_var = source.num_samples_variable
+    n_chan_var = layer.num_channels_variable
+    preamble = (
+        f"{start_var} = {start_sample}\n"
+        f"{n_samp_var} = {n_samples}\n"
+        f"{n_chan_var} = {n_channels}\n"
+    )
     parameter_function_name = f"__poisson_params_{variable_name}"
     load_function_name = f"__load_images_{variable_name}"
     load_function_text = (
+        f"{preamble}\n"
         f"def {load_function_name}(start_sample, num_samples, num_channels):\n"
         f"{source.load_command_body}\n"
         "__images_dictionary, __classes = "
-        f"{load_function_name}({start_sample}, {n_samples}, {layer.channels})\n"
+        f"{load_function_name}({start_var}, {n_samp_var}, {n_chan_var})\n"
     )
 
     transform_function_name = f"__images_to_rate_{variable_name}"
@@ -99,23 +104,27 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
         f"__rates_dictionary = {transform_function_name}(__images_dictionary)\n"
     )
     on_time_ms = source.on_time_ms
+    off_time_ms = source.off_time_ms
     period_ms = on_time_ms + source.off_time_ms
-    parameter_defines = ["\n".join(
+    parameter_defines = [f"\n{TAB}".join(
         [f"def {parameter_function_name}(channel, rates_dictionary):",
-         f"{tab}durations = np.ones(({layer.size}, {n_samples})) * {on_time_ms}",
-         f"{tab}starts = np.repeat([np.arange({n_samples}) * {period_ms}], {layer.size}, axis=0)",
-         f"{tab}return {{\"rates\": rates_dictionary[channel],",
-         f"{tab * 3}\"durations\": durations, \"starts\": starts}}\n",]
+         f"on_time_ms = {on_time_ms}",
+         f"off_time_ms = {off_time_ms}",
+         f"period_ms = on_time_ms + off_time_ms",
+         f"durations = np.ones(({layer.size}, {n_samples})) * on_time_ms",
+         f"starts = np.repeat([np.arange({n_samples}) * period_ms], {layer.size}, axis=0)",
+         f"return {{\"rates\": rates_dictionary[channel],",
+         f"{TAB * 2}\"durations\": durations, \"starts\": starts}}\n",]
     )]
 
     structure = export_structure(layer.source) # in this case the struct has the shape
     statement_text = (
         f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({layer.size}, \n"
-        f"{tab}{SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-        f"{tab * 2}**{parameter_function_name}(channel, __rates_dictionary)), \n"
-        f"{tab}structure={structure.value}, \n"
-        f"{tab}label=f\"{variable_name}{{channel}}\") \n"
-        f"{tab}for channel in range({layer.channels})}}\n"
+        f"{TAB}{SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
+        f"{TAB * 2}**{parameter_function_name}(channel, __rates_dictionary)), \n"
+        f"{TAB}structure={structure.value}, \n"
+        f"{TAB}label=f\"{variable_name}{{channel}}\") \n"
+        f"{TAB}for channel in range({layer.channels})}}"
     )
     source_defines_keys = sorted(source.defines.keys())
     sorted_source_defines = [source.defines[i] for i in source_defines_keys]
@@ -128,4 +137,21 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
 
 
     return statement
+
+
+def export_input_configuration(layer: InputLayer) -> Statement:
+    source = layer.source
+    source_type_name = source.__class__.__name__
+    config_data = [f"\"source_type\": \"{source_type_name}\""]
+    if isinstance(source, ImageDataset):
+        config_data.extend([
+            f"\"start_sample\": {source.start_sample}",
+            f"\"num_samples\": {source.num_samples}",
+            f"\"on_time_ms\": {source.on_time_ms}",
+            f"\"off_time_ms\": {source.off_time_ms}",
+        ])
+
+    config_text = f",\n{TAB}".join(config_data)
+    statement = f"{{\n{TAB}{config_text}\n}}"
+    return Statement(f"{statement}")
 
