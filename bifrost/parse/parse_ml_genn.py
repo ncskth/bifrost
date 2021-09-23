@@ -85,10 +85,9 @@ def to_neuron_layer(index, network_dictionary):
 
     if reset_variables is not None:
         cell.reset_variables_values = reset_variables
-
-    return NeuronLayer(name=layer_dictionary["name"], size=size,
-                       cell=cell, synapse=synapse, channels=channs,
-                       index=index, key=layer_key, shape=shape,)
+    name = f"{index:03d}_{layer_dictionary['name']}"
+    return NeuronLayer(name=name, size=size, cell=cell, synapse=synapse,
+                       channels=channs, index=index, key=layer_key, shape=shape,)
 
 
 def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
@@ -106,7 +105,7 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
     runtime = adjust_runtime(config.get("runtime", DEFAULT_DT),
                              input_layer)
     timestep = config.get("timestep", model.g_model.dT)  # override timestep
-    split_runs = config.get("split_runs", false)
+    split_runs = config.get("split_runs", False)
     configuration = config.get('configuration', {})
 
     net_dict = extract_all(model)

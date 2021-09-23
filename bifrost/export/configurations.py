@@ -5,6 +5,9 @@ from bifrost.export.statement import Statement
 
 
 class SUPPORTED_CONFIGS(Enum):
+    RUNTIME: str = 'runtime'
+    TIMESTEP: str = 'timestep'
+    SPLIT_RUNS: str = 'split_runs'
     MAX_NEURONS_PER_COMPUTE_UNIT: str = 'max_neurons_per_compute_unit'  # i.e. core, chip
 
 def export_configurations(configurations: Dict[str, Any]) -> Statement:
