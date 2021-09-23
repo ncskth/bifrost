@@ -14,3 +14,4 @@ class Network:
     configuration: Dict[str, Any] = ()
     # this will be used as the recordings output filename as well
     name: str = "Bifrost Network"
+    split_runs: bool = False

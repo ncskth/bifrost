@@ -68,6 +68,7 @@ def to_neuron_layer(index, network_dictionary):
 
     shape = layer_dictionary["params"].get("shape", None)
     channs = layer_dictionary["params"].get("n_channels", 1)
+
     if "conv2d" in syn_type:
         shape = shape[:2] # first two elements in array are height, width
     else:
@@ -77,7 +78,14 @@ def to_neuron_layer(index, network_dictionary):
     assert size == int(sh_size), \
            f"Size and Shape are not compatible {size} != product({shape})"
     synapse = to_synapse(layer_dictionary)
+
+    reset_variables = layer_dictionary["params"]["cell"].pop("reset_variables",
+                                                             None)
     cell = to_cell(layer_dictionary["params"]["cell"])
+
+    if reset_variables is not None:
+        cell.reset_variables_values = reset_variables
+
     return NeuronLayer(name=layer_dictionary["name"], size=size,
                        cell=cell, synapse=synapse, channels=channs,
                        index=index, key=layer_key, shape=shape,)
@@ -98,6 +106,7 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
     runtime = adjust_runtime(config.get("runtime", DEFAULT_DT),
                              input_layer)
     timestep = config.get("timestep", model.g_model.dT)  # override timestep
+    split_runs = config.get("split_runs", false)
     configuration = config.get('configuration', {})
 
     net_dict = extract_all(model)
@@ -114,7 +123,8 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
              for i in range(len(layers[:-1]))]
 
     network = Network(layers=layers, connections=conns, timestep=timestep,
-                      runtime=runtime, configuration=configuration)
+                      runtime=runtime, configuration=configuration,
+                      split_runs=split_runs)
 
     if output_layer is not None:
         output_layer.source = network.layers[-1]

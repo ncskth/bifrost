@@ -13,7 +13,8 @@ cells = {
         'synapse_shape': SynapseShapes.DELTA,
         'check': ('neurons.__class__.__name__', ),
         'v_thresh': ('neurons.nrn.extra_global_params[Vthr].view', np.copy),
-        'v_reset': ('neurons.nrn.vars[Vmem].view', np.copy)
+        'v_reset': ('neurons.nrn.vars[Vmem].view', np.copy),
+        'reset_variables': (('v', 0.0),)
     },
 }
 

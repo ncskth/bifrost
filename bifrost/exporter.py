@@ -38,7 +38,8 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     body = "\n".join(list(preambles) + statements)
 
     # Simulation run
-    runner = pynn.pynn_runner(runtime=network.runtime)
+    runner = pynn.export_split_run(network, network.runtime,
+                                   pynn.pynn_runner).value
 
     # Grab recordings
     get_records = export_save_recordings(network).value

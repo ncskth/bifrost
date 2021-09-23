@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic, Dict, Any
+from typing import TypeVar, Generic, Dict, Any, Optional, List, Tuple
 
 
 @dataclass
 class Cell:
-    pass
+    reset_variables_values: Optional[List[Tuple[str, float]]] = ()
 
 @dataclass
 class LIFCell(Cell):
