@@ -34,8 +34,8 @@ _param_map = {
         return f'_params["{layer}"]["params"]["weights"][{channel_in}, {channel_out}]'
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
-        # return f'np.fliplr(np.flipud(_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]))'
-        return f'_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]'
+        return f'np.fliplr(np.flipud(_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]))'
+        # return f'_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]'
 
     def conv2d_strides(self, layer: str) -> Output:
         return f'_params["{layer}"]["params"]["strides"]'

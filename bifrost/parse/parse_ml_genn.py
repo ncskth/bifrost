@@ -72,7 +72,7 @@ def to_neuron_layer(index, network_dictionary):
     if "conv2d" in syn_type:
         shape = shape[:2] # first two elements in array are height, width
     else:
-        shape = [size, 1]
+        shape = [1, size]
 
     sh_size = np.prod(shape)
     assert size == int(sh_size), \
