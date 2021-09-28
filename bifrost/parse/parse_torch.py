@@ -43,7 +43,11 @@ CHANNEL_INDEX = 1
 
 def trimed_named_modules(torch_net: torch.nn.Module):
     def _invalid(k, modules):
-        return (isinstance(modules[k], DONT_PARSE_THESE_MODULES) or k == '')
+        instance_invalid = isinstance(modules[k], DONT_PARSE_THESE_MODULES)
+        is_topmost = k == ''  # means top-most module
+        has_children = len(list(modules[k].children()))
+        return (is_topmost or has_children or instance_invalid)
+
 
     # this expands inner SequentialStates
     modules = dict(torch_net.named_modules())
@@ -56,14 +60,15 @@ def trimed_named_modules(torch_net: torch.nn.Module):
 
 def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[str, torch.Size]:
     input_layer = network.layers[0] # assuming the first layer is of input type
-    # Batch size, Number of Channels, Height, Width
-    # this has to be in [e.g. (8, 3, 28, 28)] BCYX format
-    input_shape = (1, input_layer.channels, *input_layer.source.shape)
+    # SimulationSteps, Batch size, Number of Channels, Height, Width
+    # this has to be in [e.g. (8, 3, 28, 28)] SBCYX format
+    input_shape = (1, 1, input_layer.channels, *input_layer.source.shape)
 
     shapes = {}
     x = torch.randn(input_shape)
     for i, k in enumerate(modules):
         print(k)
+        print(x.shape)
         x = modules[k](x)
 
         # first is output of previous layer, second is the state
@@ -76,7 +81,10 @@ def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[st
 def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
 
-    if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
+    __acceptable_parents = (
+        norse.SequentialState, pl.LightningModule, torch.nn.Module
+    )
+    if not isinstance(model, __acceptable_parents):
             raise ValueError("Unknown model type", type(model))
 
     # don't run if  no time is specified
