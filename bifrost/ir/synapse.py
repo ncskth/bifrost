@@ -1,5 +1,8 @@
 from dataclasses import dataclass
-from typing import Literal
+try:
+    from typing import Literal
+except:
+    from typing_extensions import Literal
 from bifrost.ir.constants import SynapseShapes, SynapseTypes
 
 @dataclass
