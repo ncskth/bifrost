@@ -106,7 +106,8 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     net_dict = trimed_named_modules(model)
 
     default_network = Network(layers=[input_layer], connections=[],
-                              runtime=runtime, timestep=timestep)
+                              runtime=runtime, timestep=timestep,
+                              configuration=configuration)
 
     network = module_to_ir(modules=net_dict, network=default_network)
 
@@ -151,13 +152,14 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             continue
 
         if name in ['licell', 'lifcell']:
-            size = int(np.prod(shape[START_OF_POPULATION_SHAPE_INDEX:]))
-            channels = shape[CHANNEL_INDEX]
+            _shape = shape[START_OF_POPULATION_SHAPE_INDEX:]
+            size = int(np.prod(_shape))
+            channels = 1 if len(shape) == 2 else shape[CHANNEL_INDEX]
             cell = __choose_cell(mod)
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
             post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
-                               synapse=synapse, key=k)
+                               synapse=synapse, key=k, shape=_shape)
             conn = Connection(layers[-1], post, connector)
 
             layers.append(post)
@@ -203,7 +205,8 @@ def __get_synapse(start_index: int, end_index: int, keys: List[str],
             synapse = DenseSynapse()
             break
         elif 'linear' in module_class_name:
-            synapse = StaticSynapse()
+            synapse = DenseSynapse()
+            # synapse = StaticSynapse()
             break
         elif 'avgpool2d' in module_class_name:  # these usually come after conv2d
             continue
@@ -234,7 +237,9 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
             connector = DenseConnector(str(k), pooling_key=pool_key)
             break
         elif 'linear' in module_class_name:
-            connector = MatrixConnector(str(k))
+            connector = DenseConnector(str(k), pooling_key=pool_key)
+            # todo: do we really need the Matrix connector?
+            # connector = MatrixConnector(str(k))
             break
         elif 'avgpool2d' in module_class_name:
             pool_index = k

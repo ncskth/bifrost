@@ -47,8 +47,9 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, str]) -> None:
         self.layer_map = layer_map
 
-    def linear_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
+    def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> str:
+        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, -1, {num_in_channels}))"
+                f"[:, :, {channel_in}].detach().numpy()")
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
         return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"

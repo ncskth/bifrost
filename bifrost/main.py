@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 
 import numpy as np
-from typing import Tuple, Dict, List, Optional
+from typing import Tuple, Dict, List, Optional, Any
 
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
@@ -48,8 +48,9 @@ def get_parser_and_saver(model):
         from bifrost.parse.parse_torch import torch_to_network, torch_to_context
         import torch
         def parse_torch(model: torch.nn.Module, input_layer: InputLayer,
-                        output_layer: Optional[OutputLayer] = None) -> Tuple[Network, ParameterContext[str]]:
-            network = torch_to_network(model, input_layer, output_layer)
+                        output_layer: Optional[OutputLayer] = None,
+                        config: Dict[str, Any] = {}) -> Tuple[Network, ParameterContext[str]]:
+            network = torch_to_network(model, input_layer, output_layer, config=config)
             context, net_dict = torch_to_context(network, model)
             return network, context, net_dict
 

@@ -123,12 +123,16 @@ def export_dense(connection: Connection[Layer, Layer],
                  spaces: int = 8) -> Statement:
     spaces_text = " " * spaces
     connector = connection.connector
-    weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
+    n_in_channels = connection.pre.channels
+    n_out_neurons = connection.post.size
     pool_shape, pool_stride = (
         context.conv2d_pooling(connector.pooling_key)
         if (connector.pooling_key != DefaultLayerKeys.POOLING)
         else ('None', 'None')
     )
+    weights = context.linear_weights(connector.weights_key, channel_in,
+                                     n_in_channels, n_out_neurons)
+
     # todo: pool padding here needs to be added but I'm not sure if truly needed
     return ConnectionStatement(
         f"{SIMULATOR_NAME}.PoolDenseConnector({weights}, \n"
