@@ -30,9 +30,11 @@ from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
 from bifrost.ir.constants import SynapseTypes, SynapseShapes
 from bifrost.extract.utils import try_reduce_param
-from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
+from bifrost.extract.torch.parameter_buffers import (set_parameter_buffers,
+                                                     DONT_PARSE_THESE_MODULES)
 from bifrost.parse.utils import adjust_runtime
 from bifrost.parse.constants import DEFAULT_RUNTIME, DEFAULT_DT
+
 
 # todo: remove all the magic constants and move them to a common file
 
@@ -60,15 +62,23 @@ def trimed_named_modules(torch_net: torch.nn.Module):
 
 def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[str, torch.Size]:
     input_layer = network.layers[0] # assuming the first layer is of input type
-    # SimulationSteps, Batch size, Number of Channels, Height, Width
-    # this has to be in [e.g. (8, 3, 28, 28)] SBCYX format
-    input_shape = (1, 1, input_layer.channels, *input_layer.source.shape)
+    # Batch size, Number of Channels, Height, Width
+    # this has to be in [e.g. (8, 3, 28, 28)] BCYX format
+    input_shape = (1, input_layer.channels, *input_layer.source.shape)
+    # input_shape = (input_layer.channels, *input_layer.source.shape)
 
     shapes = {}
     x = torch.randn(input_shape)
-    for i, k in enumerate(modules):
+    keys = list(modules.keys())
+    last_module = modules[keys[0]]
+    for i, k in enumerate(keys):
         print(k)
         print(x.shape)
+        print(modules[k].__class__.__name__)
+        if isinstance(modules[k], torch.nn.Linear):
+            x = x.view(1, -1)
+            print(x.shape)
+
         x = modules[k](x)
 
         # first is output of previous layer, second is the state
@@ -87,7 +97,7 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     if not isinstance(model, __acceptable_parents):
             raise ValueError("Unknown model type", type(model))
 
-    # don't run if  no time is specified
+    # default is 0, don't run if  no time is specified
     runtime = adjust_runtime(config.get('runtime', DEFAULT_RUNTIME),
                              input_layer)
     timestep = config.get("timestep", DEFAULT_DT)
