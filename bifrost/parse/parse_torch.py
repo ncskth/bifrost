@@ -28,7 +28,7 @@ from bifrost.ir.synapse import (
 
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
-from bifrost.ir.constants import SynapseTypes, SynapseShapes
+from bifrost.ir.constants import SynapseTypes, SynapseShapes, DefaultLayerKeys
 from bifrost.extract.utils import try_reduce_param
 from bifrost.extract.torch.parameter_buffers import (set_parameter_buffers,
                                                      DONT_PARSE_THESE_MODULES)
@@ -224,7 +224,9 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
         module_class_name = modules[k].__class__.__name__.lower()
-        pool_key = '' if pool_index is None else str(pool_index)
+        pool_key = (
+            DefaultLayerKeys.POOLING if pool_index is None else str(pool_index)
+        )
         if 'conv2d' in module_class_name:
             connector = ConvolutionConnector(str(k), pooling_key=pool_key)
             break
