@@ -6,6 +6,9 @@ It is named after Bifrost, the bridge between middle earth and the realms of the
 
 ## Usage: PyTorch -> PyNN script
 
+After training the model, when saving the `StateDictionary` you need to use the utility `set_parameter_buffers` included in `bifrost.extract.torch.parameter_buffers`.
+To load the model again, the `torch.nn.Module` method `load_state_dict` has to have the argument `strict` set to `False`. 
+
 Models are encoded by providing the Python import path to the model class as well as the shape of input tensor (here with 1 timestep, 8 batches, 2 channels, and a 640x480 image input):
 
 ```bash
