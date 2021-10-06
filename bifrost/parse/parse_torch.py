@@ -156,6 +156,11 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             size = int(np.prod(_shape))
             channels = 1 if len(shape) == 2 else shape[CHANNEL_INDEX]
             cell = __choose_cell(mod)
+
+            # todo: get this from some configuration
+            cell.reset_variables_values = [('v', 0.0)]
+            # end-todo
+
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
             post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,

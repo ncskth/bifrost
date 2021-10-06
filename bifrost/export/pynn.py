@@ -78,8 +78,9 @@ def export_split_run(network: Network, runtime: float,
 
     statement_text = (
         f"for sample_id in range({source.num_samples_variable}):\n"
+        f"{resets_text}\n\n"
         f"{run_text}\n"
-        f"{resets_text}\n"
+
     )
 
     return Statement(statement_text)

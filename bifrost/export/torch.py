@@ -6,44 +6,54 @@ from bifrost.ir.parameter import ParameterContext
 
 
 class TorchContext(ParameterContext[str]):
-    imports = ["import numpy as np", "import torch", "import sys"]
+    imports = ["import numpy as np", "import torch", "import sys",
+               "from bifrost.extract.utils import try_reduce_param"]
     preamble = """
-def try_reduce_param(param):
-    try:
-        if np.allclose(param[:1], param):
-            return np.asscalar(param[0])
-    except Exception as e:
-        if np.ndim(param) == 0:
-            return param.item()
-    else:
-        return param
 
 _checkpoint = torch.load(sys.argv[1])
 _params = _checkpoint['state_dict']
 
 _param_map = {
-    "tau_mem_inv": lambda v: ("tau_m", 1.0/try_reduce_param(v)),
-    "tau_syn_inv": lambda v: ("tau_syn_E", 1.0/try_reduce_param(v)),
-    "v_reset": lambda v: ("v_reset", try_reduce_param(v)),
-    "v_th": lambda v: ("v_thresh", try_reduce_param(v)),
+    "tau_m": ("tau_mem_inv", lambda v: 1.0/try_reduce_param(v)),
+    "tau_syn_E": ("tau_syn_inv", lambda v: 1.0/try_reduce_param(v)),
+    "tau_syn_I": ("tau_syn_inv", lambda v: 1.0/try_reduce_param(v)),
+    "v_reset": ("v_reset", lambda v: try_reduce_param(v)),
+    "v_rest": ("v_leak", lambda v: try_reduce_param(v)),
+    "v_thresh": ("v_th", lambda v: try_reduce_param(v)),
 }
 """
 
     lif_parameters = [
-        "tau_mem_inv",
-        "tau_syn_inv",
+        "tau_m",
+        "tau_syn_E",
+        "tau_syn_I",
         "v_reset",
-        "v_th",
-        # "v_leak",
-        # "alpha"
+        "v_rest",
+        "v_thresh",
     ]
 
     li_parameters = [
-        "tau_mem_inv",
-        "tau_syn_inv",
-        # "v_leak",
+        "tau_m",
+        "tau_syn_E",
+        "tau_syn_I",
+        "v_rest",
     ]
 
+    # lif_parameters = [
+    #     "tau_mem_inv",
+    #     "tau_syn_inv",
+    #     "v_reset",
+    #     "v_th",
+    #     # "v_leak",
+    #     # "alpha"
+    # ]
+    #
+    # li_parameters = [
+    #     "tau_mem_inv",
+    #     "tau_syn_inv",
+    #     # "v_leak",
+    # ]
+    #
     def __init__(self, layer_map: Dict[str, str]) -> None:
         self.layer_map = layer_map
 
@@ -69,8 +79,10 @@ _param_map = {
                f"(_params[\"{self.layer_map[layer]}.{{}}\"])"
 
     def neuron_parameter(self, layer: str, parameter_name: str) -> str:
-        return f"_param_map[{parameter_name}]"\
-               f"(_params[f\"{self.layer_map[layer]}.{{{parameter_name}}}\"])"
+        return f"_params[f\"{self.layer_map[layer]}.{{{parameter_name}}}\"]"
+
+    def parameter_map_name(self, parameter_name: str) -> str:
+        return f"_param_map[{parameter_name}]"
 
     def parameter_names(self, cell: Cell) -> List[str]:
         if isinstance(cell, LIFCell):

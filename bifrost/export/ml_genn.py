@@ -19,43 +19,45 @@ def to_dict(np_file):
 _params = to_dict( np.load(sys.argv[1], allow_pickle=True) )
 
 _param_map = {
-    "v_reset": lambda v: ("v_reset", v),
-    "v_thresh": lambda v: ("v_thresh", v),
+    "v_reset": ("v_reset", lambda v: v),
+    "v_thresh": ("v_thresh", lambda v: v),
 }
     """
 
-    if_parameters = ['v_thresh', 'v_reset']
+    if_parameters = ["v_thresh", "v_reset"]
 
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> Output:
-        return f'_params["{layer}"]["params"]["weights"][{channel_in}, 0]'
+        return f"_params[\"{layer}\"][\"params\"][\"weights\"][{channel_in}, 0]"
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
-        return f'np.fliplr(np.flipud(_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]))'
-        # return f'_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]'
+        return f"np.fliplr(np.flipud(_params[\"{layer}\"][\"params\"][\"weights\"][:, :, {channel_in}, {channel_out}]))"
+        # return f"_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]"
 
     def conv2d_strides(self, layer: str) -> Output:
-        return f'_params["{layer}"]["params"]["strides"]'
+        return f"_params[\"{layer}\"][\"params\"][\"strides\"]"
 
     def conv2d_padding(self, layer: str) -> Output:
-        return f'_params["{layer}"]["params"]["padding"]'
+        return f"_params[\"{layer}\"][\"params\"][\"padding\"]"
 
     def conv2d_pooling(self, layer: str) -> Output:
-        area = f'_params["{layer}"]["params"].get("pool_shape", None)'
-        stride = f'_params["{layer}"]["params"].get("pool_stride", None)'
+        area = f"_params[\"{layer}\"][\"params\"].get(\"pool_shape\", None)"
+        stride = f"_params[\"{layer}\"][\"params\"].get(\"pool_stride\", None)"
         return area, stride
 
     def cell_type(self, layer: str) -> Output:
-        return f"_params['{layer}']['params']['cell']['target']"
+        return f"_params[\"{layer}\"][\"params\"][\"cell\"][\"target\"]"
 
     def cell_parameter_dict(self, layer: str) -> Dict:
         return {}
 
-    def neuron_parameter(self, layer: str, parameter_name: str) -> str:
-        return (f'_param_map[{parameter_name}]'
-                f'(_params["{self.layer_map[layer]}"]["params"]["cell"][{parameter_name}])')
+    def neuron_parameter(self, layer: str, parameter_var_name: str) -> str:
+        return f"_params[\"{self.layer_map[layer]}\"][\"params\"][\"cell\"][{parameter_var_name}]"
+
+    def parameter_map_name(self, parameter_var_name: str) -> str:
+        return f"_param_map[{parameter_var_name}]"
 
     def parameter_names(self, cell: Cell) -> List[str]:
         if isinstance(cell, IFCell):
