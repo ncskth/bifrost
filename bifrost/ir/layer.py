@@ -24,6 +24,7 @@ class Layer:
 
 @dataclass
 class NeuronLayer(Layer):
+    dt: float = 1.0
     cell: Cell = LIFCell()
     synapse: Synapse = StaticSynapse()
     index: int = 0  # todo: not sure we use this anymore

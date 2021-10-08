@@ -104,9 +104,16 @@ def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
     configuration = config.get('configuration', {})
 
     net_dict = trimed_named_modules(model)
+    source_dt = 1.0
+    for k in net_dict:
+        class_name = net_dict[k].__class__.__name__
+        if 'LIF' in class_name:
+            source_dt = net_dict[k].dt
+            break
 
     default_network = Network(layers=[input_layer], connections=[],
                               runtime=runtime, timestep=timestep,
+                              source_dt=source_dt,
                               configuration=configuration)
 
     network = module_to_ir(modules=net_dict, network=default_network)
@@ -163,8 +170,8 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
 
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
-            post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
-                               synapse=synapse, key=k, shape=_shape)
+            post = NeuronLayer(f"{name}_{k}", size, channels, dt=network.source_dt,
+                               cell=cell, synapse=synapse, key=k, shape=_shape)
             conn = Connection(layers[-1], post, connector)
 
             layers.append(post)
@@ -191,10 +198,12 @@ def __choose_cell(module: torch.nn.Module):
 
 
 def __choose_synapse_shape(torch_params):
-    if hasattr(torch_params, 'alpha'):
-        return SynapseShapes.ALPHA
-    else:  # note: do we support delta?
-        return SynapseShapes.EXPONENTIAL
+    # if hasattr(torch_params, 'alpha'):
+    #     return SynapseShapes.ALPHA
+    # else:  # note: do we support delta?
+    #     return SynapseShapes.EXPONENTIAL
+    # TODO: I think Norse just does exponential synapses
+    return SynapseShapes.EXPONENTIAL
 
 
 def __get_synapse(start_index: int, end_index: int, keys: List[str],

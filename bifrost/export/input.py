@@ -79,6 +79,7 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     n_samples = source.num_samples
     n_channels = layer.channels
     variable_name = layer.variable("")
+    rates_dict_name = "__rates_dictionary"
     start_var = source.start_sample_variable
     n_samp_var = source.num_samples_variable
     n_chan_var = layer.num_channels_variable
@@ -103,18 +104,18 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     transform_function_text = (
         f"def {transform_function_name}(images_dictionary):\n"
         f"{source.pixel_to_rate_transform}\n\n"
-        f"__rates_dictionary = {transform_function_name}(__images_dictionary)\n"
+        f"{rates_dict_name} = {transform_function_name}({images_variable_name})\n"
     )
     on_time_ms = source.on_time_ms
     off_time_ms = source.off_time_ms
     period_ms = on_time_ms + source.off_time_ms
     parameter_defines = [f"\n{TAB}".join(
-        [f"def {parameter_function_name}(channel, rates_dictionary):",
+        [f"def {parameter_function_name}(channel, rates_dictionary, n_samples):",
          f"on_time_ms = {on_time_ms}",
          f"off_time_ms = {off_time_ms}",
          f"period_ms = on_time_ms + off_time_ms",
-         f"durations = np.ones(({layer.size}, {n_samples})) * on_time_ms",
-         f"starts = np.repeat([np.arange({n_samples}) * period_ms], {layer.size}, axis=0)",
+         f"durations = np.ones(({layer.size}, n_samples)) * on_time_ms",
+         f"starts = np.repeat([np.arange(n_samples) * period_ms], {layer.size}, axis=0)",
          f"return {{\"rates\": rates_dictionary[channel],",
          f"{TAB * 2}\"durations\": durations, \"starts\": starts}}\n",]
     )]
@@ -123,10 +124,10 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     statement_text = (
         f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({layer.size}, \n"
         f"{TAB}{SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-        f"{TAB * 2}**{parameter_function_name}(channel, __rates_dictionary)), \n"
+        f"{TAB * 2}**{parameter_function_name}(channel, {rates_dict_name}, {n_samp_var})), \n"
         f"{TAB}structure={structure.value}, \n"
         f"{TAB}label=f\"{variable_name}{{channel}}\") \n"
-        f"{TAB}for channel in range({layer.channels})}}"
+        f"{TAB}for channel in {rates_dict_name}}}"
     )
     source_defines_keys = sorted(source.defines.keys())
     sorted_source_defines = [source.defines[i] for i in source_defines_keys]

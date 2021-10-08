@@ -14,17 +14,20 @@ _checkpoint = torch.load(sys.argv[1])
 _params = _checkpoint['state_dict']
 
 _param_map = {
-    "tau_m": ("tau_mem_inv", lambda v: 1.0/try_reduce_param(v)),
-    "tau_syn_E": ("tau_syn_inv", lambda v: 1.0/try_reduce_param(v)),
-    "tau_syn_I": ("tau_syn_inv", lambda v: 1.0/try_reduce_param(v)),
-    "v_reset": ("v_reset", lambda v: try_reduce_param(v)),
-    "v_rest": ("v_leak", lambda v: try_reduce_param(v)),
-    "v_thresh": ("v_th", lambda v: try_reduce_param(v)),
+    # taus need to be adjusted by dt thus the  * X
+    "tau_m": ("tau_mem_inv", lambda v, dt: 1.0/(dt * try_reduce_param(v))),
+    "tau_syn_E": ("tau_syn_inv", lambda v, dt: 1.0/(dt * try_reduce_param(v))),
+    "tau_syn_I": ("tau_syn_inv", lambda v, dt: 1.0/(dt * try_reduce_param(v))),
+    "v_reset": ("v_reset", lambda v, dt: try_reduce_param(v)),
+    "v_rest": ("v_leak", lambda v, dt: try_reduce_param(v)),
+    "v_thresh": ("v_th", lambda v, dt: try_reduce_param(v)),
+    "cm": ("tau_mem_inv", lambda v, dt: 1.0/(try_reduce_param(v))),
 }
 """
 
     lif_parameters = [
         "tau_m",
+        "cm",
         "tau_syn_E",
         "tau_syn_I",
         "v_reset",
@@ -34,6 +37,7 @@ _param_map = {
 
     li_parameters = [
         "tau_m",
+        "cm",
         "tau_syn_E",
         "tau_syn_I",
         "v_rest",

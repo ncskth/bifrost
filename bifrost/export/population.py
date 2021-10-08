@@ -28,7 +28,7 @@ def export_cell_params(layer: Layer, context: ParameterContext[str],
     parameter_source = context.neuron_parameter(
                         layer_name, source_variable_name)
     parameter_transform_name = f"__transform_parameter"
-    parameter_transform = f"{parameter_transform_name}({parameter_source})"
+    parameter_transform = f"{parameter_transform_name}({parameter_source}, {layer.dt})"
     parameter_names = export_list_var(parameter_list_name,
                             context.parameter_names(layer.cell))
     map_parameter = context.parameter_map_name(parameter_variable_name)

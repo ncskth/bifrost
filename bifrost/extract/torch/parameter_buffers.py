@@ -10,7 +10,10 @@ DONT_PARSE_THESE_MODULES = (
     norse.torch.SequentialState,
     torch.nn.modules.loss._Loss, # loss functions
     torch.nn.modules.batchnorm._NormBase, # normalizers
-    norse.torch.module.encode.ConstantCurrentLIFEncoder
+    norse.torch.module.encode.ConstantCurrentLIFEncoder,
+    norse.torch.module.encode.PoissonEncoder,
+    norse.torch.module.encode.SignedPoissonEncoder,
+    norse.torch.module.encode.PopulationEncoder,
 )
 
 
