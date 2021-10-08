@@ -21,7 +21,7 @@ _param_map = {
     "v_reset": ("v_reset", lambda v, dt: try_reduce_param(v)),
     "v_rest": ("v_leak", lambda v, dt: try_reduce_param(v)),
     "v_thresh": ("v_th", lambda v, dt: try_reduce_param(v)),
-    "cm": ("tau_mem_inv", lambda v, dt: 1.0/(try_reduce_param(v))),
+    "cm": ("tau_mem_inv", lambda v, dt: 1.0/(dt * try_reduce_param(v))),
 }
 """
 
@@ -66,7 +66,7 @@ _param_map = {
                 f"[:, :, {channel_in}].detach().numpy()")
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
+        return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
 
     def conv2d_strides(self, layer: str) -> str:
         return f"_params[\"{layer}.stride\"]"

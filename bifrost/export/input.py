@@ -77,18 +77,25 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     source = layer.source
     start_sample = source.start_sample
     n_samples = source.num_samples
+    on_time = source.on_time_ms
+    off_time = source.off_time_ms
     n_channels = layer.channels
     variable_name = layer.variable("")
     rates_dict_name = "__rates_dictionary"
     start_var = source.start_sample_variable
     n_samp_var = source.num_samples_variable
     n_chan_var = layer.num_channels_variable
+    on_t_var = source.on_time_variable
+    off_t_var = source.off_time_variable
     preamble = (
         f"{start_var} = {start_sample}\n"
         f"{n_samp_var} = {n_samples}\n"
         f"{n_chan_var} = {n_channels}\n"
+        f"{on_t_var} = {on_time}\n"
+        f"{off_t_var} = {off_time}\n"
     )
     parameter_function_name = f"__poisson_params_{variable_name}"
+    parameter_function_args = f"channel, {rates_dict_name}, {n_samp_var}, {on_t_var}, {off_t_var}"
     load_function_name = f"__load_images_{variable_name}"
     images_variable_name = source.images_variable
     classes_variable_name = source.classes_variable
@@ -110,9 +117,7 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     off_time_ms = source.off_time_ms
     period_ms = on_time_ms + source.off_time_ms
     parameter_defines = [f"\n{TAB}".join(
-        [f"def {parameter_function_name}(channel, rates_dictionary, n_samples):",
-         f"on_time_ms = {on_time_ms}",
-         f"off_time_ms = {off_time_ms}",
+        [f"def {parameter_function_name}(channel, rates_dictionary, n_samples, on_time_ms, off_time_ms):",
          f"period_ms = on_time_ms + off_time_ms",
          f"durations = np.ones(({layer.size}, n_samples)) * on_time_ms",
          f"starts = np.repeat([np.arange(n_samples) * period_ms], {layer.size}, axis=0)",
@@ -124,7 +129,7 @@ def export_poisson_image_dataset_input(layer: InputLayer, ctx: ParameterContext[
     statement_text = (
         f"{variable_name} = {{channel: {SIMULATOR_NAME}.Population({layer.size}, \n"
         f"{TAB}{SIMULATOR_NAME}.extra_models.SpikeSourcePoissonVariable( \n"
-        f"{TAB * 2}**{parameter_function_name}(channel, {rates_dict_name}, {n_samp_var})), \n"
+        f"{TAB * 2}**{parameter_function_name}({parameter_function_args})), \n"
         f"{TAB}structure={structure.value}, \n"
         f"{TAB}label=f\"{variable_name}{{channel}}\") \n"
         f"{TAB}for channel in {rates_dict_name}}}"
@@ -148,10 +153,10 @@ def export_input_configuration(layer: InputLayer) -> Statement:
     config_data = [f"\"source_type\": \"{source_type_name}\""]
     if isinstance(source, ImageDataset):
         config_data.extend([
-            f"\"start_sample\": {source.start_sample}",
-            f"\"num_samples\": {source.num_samples}",
-            f"\"on_time_ms\": {source.on_time_ms}",
-            f"\"off_time_ms\": {source.off_time_ms}",
+            f"\"start_sample\": {source.start_sample_variable}",
+            f"\"num_samples\": {source.num_samples_variable}",
+            f"\"on_time_ms\": {source.on_time_variable}",
+            f"\"off_time_ms\": {source.off_time_variable}",
             f"\"target_classes\": {source.classes_variable}"
         ])
 

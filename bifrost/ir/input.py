@@ -33,6 +33,14 @@ class ImageDataset(InputSource):
     def classes_variable(self):
         return "__classes"
 
+    @property
+    def on_time_variable(self):
+        return "__on_time_ms"
+
+    @property
+    def off_time_variable(self):
+        return "__off_time_ms"
+
 
 @dataclass
 class PoissonImageDataset(ImageDataset):
