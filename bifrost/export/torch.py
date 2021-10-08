@@ -62,8 +62,8 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> str:
-        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, -1, {num_in_channels}))"
-                f"[:, :, {channel_in}].detach().numpy()")
+        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, {num_in_channels}, -1))"
+                f"[:, {channel_in}, :].detach().numpy()")
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
         return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
