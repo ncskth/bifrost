@@ -21,7 +21,8 @@ _param_map = {
     "v_reset": ("v_reset", lambda v, dt: try_reduce_param(v)),
     "v_rest": ("v_leak", lambda v, dt: try_reduce_param(v)),
     "v_thresh": ("v_th", lambda v, dt: try_reduce_param(v)),
-    "cm": ("tau_mem_inv", lambda v, dt: 1.0/(dt * try_reduce_param(v))),
+    "cm": ("tau_mem_inv", lambda v, dt: 1.0),
+    "ioffset": ("bias", lambda v, dt: try_reduce_param(v)),
 }
 """
 
@@ -62,11 +63,12 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> str:
-        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, {num_in_channels}, -1))"
-                f"[:, {channel_in}, :].detach().numpy()")
+        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, -1, {num_in_channels}))"
+                f"[:, :, {channel_in}].detach().numpy()")
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
+        return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
+        # return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
 
     def conv2d_strides(self, layer: str) -> str:
         return f"_params[\"{layer}.stride\"]"
