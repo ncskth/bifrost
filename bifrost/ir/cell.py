@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Dict, Any, Optional, List, Tuple
-
+from bifrost.ir.bases import CellBase
 
 @dataclass
-class Cell:
+class Cell(CellBase):
     reset_variables_values: Optional[List[Tuple[str, float]]] = ()
 
 @dataclass

@@ -18,3 +18,4 @@ class DefaultLayerKeys(Enum):
     POOLING:str = "parameter context layer key for pooling"
     STRIDE:str = "parameter context layer key for strides"
     WEIGHT:str = "parameter context layer key for weights"
+    BIAS:str = "parameter context layer key for bias"

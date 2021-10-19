@@ -171,8 +171,12 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
             post = NeuronLayer(f"{name}_{k}", size, channels, dt=network.source_dt,
-                               cell=cell, synapse=synapse, key=k, shape=_shape)
-            conn = Connection(layers[-1], post, connector)
+                               cell=cell, synapse=synapse, key=k, shape=_shape,
+                               network=network)
+            conn = Connection(layers[-1], post, connector, network=network)
+
+            post.incoming_connection = conn
+            layers[-1].outgoing_connection = conn
 
             layers.append(post)
             connections.append(conn)
@@ -240,10 +244,13 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
     connector = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        module_class_name = modules[k].__class__.__name__.lower()
+        module = modules[k]
+        module_class_name = module.__class__.__name__.lower()
         pool_key = (
             DefaultLayerKeys.POOLING if pool_index is None else str(pool_index)
         )
+        bias_key = (keys[conn_idx]
+                    if hasattr(module, 'bias') else DefaultLayerKeys.BIAS)
         if 'conv2d' in module_class_name:
             connector = ConvolutionConnector(str(k), pooling_key=pool_key)
             break
@@ -258,7 +265,11 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
         elif 'avgpool2d' in module_class_name:
             pool_index = k
             continue
+
+
         # this should not be reached
         raise ValueError("Unknown connector", module_class_name)
+
+    connector.bias_key = bias_key
 
     return connector

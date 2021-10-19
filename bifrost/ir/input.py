@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from bifrost.ir.layer import Layer
 from typing import Dict, List, Set, Any
-
+from bifrost.ir.bases import InputSourceBase
 
 @dataclass
-class InputSource:
+class InputSource(InputSourceBase):
     shape: List[int]
 
 @dataclass

@@ -80,6 +80,12 @@ _param_map = {
         return (f"_params[\"{layer}.kernel_size\"]", \
                 f"_params[\"{layer}.stride\"]")
 
+    def bias_conv2d(self, layer:str, channel: str) -> str:
+        return f"_params[\"{layer}.bias\"][{channel}]"
+
+    def bias_dense(self, layer:str) -> str:
+        return f"_params[\"{layer}.bias\"]"
+
     def neuron_parameter_base(self, layer:str) -> str:
         return f"_param_map[{{}}]"\
                f"(_params[\"{self.layer_map[layer]}.{{}}\"])"

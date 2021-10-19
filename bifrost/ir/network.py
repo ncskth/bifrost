@@ -3,10 +3,10 @@ from typing import List, Set, Dict, Any, Tuple
 
 from bifrost.ir.connection import Connection
 from bifrost.ir.layer import Layer
-
+from bifrost.ir.bases import NetworkBase
 
 @dataclass
-class Network:
+class Network(NetworkBase):
     layers: List[Layer]
     connections: Set[Connection]
     runtime: float = -1.0  # Default to infinity
