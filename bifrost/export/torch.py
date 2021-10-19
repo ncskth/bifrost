@@ -63,12 +63,12 @@ _param_map = {
         self.layer_map = layer_map
 
     def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> str:
-        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, -1, {num_in_channels}))"
-                f"[:, :, {channel_in}].detach().numpy()")
+        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, {num_in_channels}, -1))"
+                f"[:, {channel_in}, :].detach().numpy()")
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
-        return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
-        # return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
+        # return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
+        return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
 
     def conv2d_strides(self, layer: str) -> str:
         return f"_params[\"{layer}.stride\"]"
@@ -81,10 +81,10 @@ _param_map = {
                 f"_params[\"{layer}.stride\"]")
 
     def bias_conv2d(self, layer:str, channel: str) -> str:
-        return f"_params[\"{layer}.bias\"][{channel}]"
+        return f"_params[\"{layer}.bias\"][{channel}].detach().numpy()"
 
     def bias_dense(self, layer:str) -> str:
-        return f"_params[\"{layer}.bias\"]"
+        return f"_params[\"{layer}.bias\"].detach().numpy()"
 
     def neuron_parameter_base(self, layer:str) -> str:
         return f"_param_map[{{}}]"\

@@ -58,11 +58,11 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
             param_text = context.bias_conv2d(bias_key, "channel")
         elif isinstance(in_conn.connector, DenseConnector):
             param_text = context.bias_dense(bias_key)
-
+        dt = layer.network.source_dt
         bias_text = (
             f"for channel in {layer_variable_name}:\n"
             f"{TAB}__source_param_name, __transform = {map_parameter}\n"
-            f"{TAB}__i_offset = __transform({param_text})\n"
+            f"{TAB}__i_offset = __transform({param_text}, {dt})\n"
             f"{TAB}{layer_variable_name}[channel].set(i_offset=__i_offset)\n"
         )
 
