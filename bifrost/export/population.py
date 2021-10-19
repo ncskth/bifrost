@@ -52,7 +52,7 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
         bias_text = ""
     else:
         layer_variable_name = layer.variable('')
-        parameter_variable_name = "\"ioffset\""
+        parameter_variable_name = "\"i_offset\""
         map_parameter = context.parameter_map_name(parameter_variable_name)
         if isinstance(in_conn.connector, ConvolutionConnector):
             param_text = context.bias_conv2d(bias_key, "channel")
@@ -62,8 +62,8 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
         bias_text = (
             f"for channel in {layer_variable_name}:\n"
             f"{TAB}__source_param_name, __transform = {map_parameter}\n"
-            f"{TAB}__ioffset = __transform({param_text})\n"
-            f"{TAB}{layer_variable_name}[channel].set(ioffset=__ioffset)\n"
+            f"{TAB}__i_offset = __transform({param_text})\n"
+            f"{TAB}{layer_variable_name}[channel].set(i_offset=__i_offset)\n"
         )
 
     return Statement(bias_text)

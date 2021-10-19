@@ -22,7 +22,7 @@ _param_map = {
     "v_rest": ("v_leak", lambda v, dt: try_reduce_param(v)),
     "v_thresh": ("v_th", lambda v, dt: try_reduce_param(v)),
     "cm": ("tau_mem_inv", lambda v, dt: 1.0),
-    "ioffset": ("bias", lambda v, dt: try_reduce_param(v)),
+    "i_offset": ("bias", lambda v, dt: try_reduce_param(v)),
 }
 """
 
