@@ -60,7 +60,7 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
             param_text = context.bias_dense(bias_key)
 
         bias_text = (
-            f"for channel in range({layer.channels}):\n"
+            f"for channel in {layer_variable_name}:\n"
             f"{TAB}__source_param_name, __transform = {map_parameter}\n"
             f"{TAB}__ioffset = __transform({param_text})\n"
             f"{TAB}{layer_variable_name}[channel].set(ioffset=__ioffset)\n"

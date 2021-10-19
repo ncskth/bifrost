@@ -17,7 +17,7 @@ def export_record(layer: Layer) -> Statement:
         recordings = ", ".join(f"\"{r}\"" for r in layer.record)
         recordings = f"[{recordings}]"
     tab = " " * 4
-    txt = (f"for channel in range({layer.channels}):\n"
+    txt = (f"for channel in {variable_name}:\n"
            f"{tab}{variable_name}[channel].record({recordings})")
 
     return Statement(txt)
