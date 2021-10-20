@@ -8,7 +8,7 @@ from bifrost.ir.bases import NetworkBase
 @dataclass
 class Network(NetworkBase):
     layers: List[Layer]
-    connections: Set[Connection]
+    connections: List[Connection]
     runtime: float = -1.0  # Default to infinity
     timestep: float = 1.0  # Default to 1ms, target simulation step (fraction of ms)
     source_dt: float = 1.0  # source network (norse, ml_genn) simulation step (fraction of ms)

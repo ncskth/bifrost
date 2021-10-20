@@ -54,7 +54,7 @@ def to_cell(cell_params):
     return cell_class()
 
 
-def to_neuron_layer(index, network_dictionary):
+def to_neuron_layer(index: int, network_dictionary: Dict, network: Network) -> NeuronLayer:
     """
     :param index: numeric index for the layer to translate
     :param network_dictionary: ml_genn description from bifrost.extract.ml_genn
@@ -87,16 +87,18 @@ def to_neuron_layer(index, network_dictionary):
         cell.reset_variables_values = reset_variables
     name = f"{index:03d}_{layer_dictionary['name']}"
     return NeuronLayer(name=name, size=size, cell=cell, synapse=synapse,
-                       channels=channs, index=index, key=layer_key, shape=shape,)
+                       channels=channs, index=index, key=layer_key, shape=shape,
+                       network=network)
 
 
-def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary):
+def to_connection(pre: NeuronLayer, post: NeuronLayer, network_dictionary: Dict,
+                  network: Network) -> Connection:
     # weights are stored in the post-synaptic population
     layer_dict = copy(network_dictionary[post.key])
     conn = get_ir_class(layer_dict["connector_type"])(post.key)
     if "pool_shape" in layer_dict["params"]:
         conn.pooling_key = str(post.key)
-    return Connection(pre, post, conn)
+    return Connection(pre, post, conn, network=network)
 
 
 def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
@@ -109,21 +111,27 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
     configuration = config.get('configuration', {})
 
     net_dict = extract_all(model)
-    layers = []
+    network = Network([input_layer], [], timestep=timestep,
+                      runtime=runtime, configuration=configuration,
+                      split_runs=split_runs)
+    layers = network.layers
     net_map = {}
     for i, k in enumerate(sorted(net_dict.keys())):
         if i == 0: # first index is the
             continue
-        lyr = to_neuron_layer(i, net_dict)
+        lyr = to_neuron_layer(i, net_dict, network)
         net_map[str(lyr)] = k
         layers.append(lyr)
-    layers = [input_layer] + layers
-    conns = [to_connection(layers[i], layers[i + 1], net_dict)
-             for i in range(len(layers[:-1]))]
 
-    network = Network(layers=layers, connections=conns, timestep=timestep,
-                      runtime=runtime, configuration=configuration,
-                      split_runs=split_runs)
+    conns = network.connections
+    for i, k in enumerate(sorted(net_dict.keys())[:-1]):
+        if i == 0:  # first index is the
+            continue
+
+        conns.append(to_connection(layers[i], layers[i + 1], net_dict, network))
+        layers[i].incoming_connection = conns[i - 1]
+
+    layers[-1].incoming_connection = conns[-1]
 
     if output_layer is not None:
         output_layer.source = network.layers[-1]
