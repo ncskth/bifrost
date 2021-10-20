@@ -125,11 +125,9 @@ def ml_genn_to_network(model: ml_genn.Model, input_layer: InputLayer,
 
     conns = network.connections
     for i, k in enumerate(sorted(net_dict.keys())[:-1]):
-        if i == 0:  # first index is the
-            continue
-
         conns.append(to_connection(layers[i], layers[i + 1], net_dict, network))
-        layers[i].incoming_connection = conns[i - 1]
+        if i > 0:
+            layers[i].incoming_connection = conns[i - 1]
 
     layers[-1].incoming_connection = conns[-1]
 
