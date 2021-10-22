@@ -4,11 +4,18 @@ which are needed for sPyNNaker but are typically not stored through the state_di
 """
 import torch
 import norse
+
+
 DONT_PARSE_THESE_MODULES = (
     norse.torch.SequentialState,
     torch.nn.modules.loss._Loss, # loss functions
-    torch.nn.modules.batchnorm._NormBase # normalizers
+    torch.nn.modules.batchnorm._NormBase, # normalizers
+    norse.torch.module.encode.ConstantCurrentLIFEncoder,
+    norse.torch.module.encode.PoissonEncoder,
+    norse.torch.module.encode.SignedPoissonEncoder,
+    norse.torch.module.encode.PopulationEncoder,
 )
+
 
 def set_parameter_buffers(model: torch.nn.Module):
     """:param model: the PyTorch network, will be modified in-line"""
@@ -20,6 +27,7 @@ def set_parameter_buffers(model: torch.nn.Module):
         if k == '' or isinstance(module, DONT_PARSE_THESE_MODULES):
             continue
         set_parameter_buffers_per_layer(module)
+
 
 def set_parameter_buffers_per_layer(module: torch.nn.Module):
     """:param module: a 'layer' (PyTorch module)"""

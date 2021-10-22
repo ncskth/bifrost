@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from bifrost.ir.layer import Layer
 from typing import Dict, List, Set, Any
-
+from bifrost.ir.bases import InputSourceBase
 
 @dataclass
-class InputSource:
+class InputSource(InputSourceBase):
     shape: List[int]
 
 @dataclass
@@ -14,12 +14,37 @@ class ImageDataset(InputSource):
     load_command_body: str
     start_sample: int
     num_samples: int
+    on_time_ms: float  # milliseconds
+    off_time_ms: float  # milliseconds
+
+    @property
+    def start_sample_variable(self):
+        return "__start_sample"
+
+    @property
+    def num_samples_variable(self):
+        return "__num_samples"
+
+    @property
+    def images_variable(self):
+        return "__images_dictionary"
+
+    @property
+    def classes_variable(self):
+        return "__classes"
+
+    @property
+    def on_time_variable(self):
+        return "__on_time_ms"
+
+    @property
+    def off_time_variable(self):
+        return "__off_time_ms"
+
 
 @dataclass
 class PoissonImageDataset(ImageDataset):
     pixel_to_rate_transform: str
-    on_time_ms: float  # milliseconds
-    off_time_ms: float  # milliseconds
 
 @dataclass
 class SpiNNakerSPIFInput(InputSource):
@@ -49,4 +74,8 @@ class DummyTestInputSource(InputSource):
 class InputLayer(Layer):
     source: InputSource
     record: List[str] = ()
+
+    @property
+    def num_channels_variable(self):
+        return "__n_channels"
 

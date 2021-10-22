@@ -33,7 +33,7 @@ def extract_cell_params(layer, cell_trans):
 
     cell_type = get_param(layer,  CELL_TYPE_PARAM)
     pdict = deepcopy(cell_trans[cell_type])
-    ignore_keys = ['target', 'synapse_type', 'synapse_shape']
+    ignore_keys = ['target', 'synapse_type', 'synapse_shape', 'reset_variables']
     return get_params_from_dict(layer, cell_type, pdict, ignore_keys,
                                 try_reduce=True)
 

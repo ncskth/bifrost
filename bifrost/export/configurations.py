@@ -1,10 +1,13 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Union
 from enum import Enum
 from bifrost.export.pynn import SIMULATOR_NAME
 from bifrost.export.statement import Statement
 
 
 class SUPPORTED_CONFIGS(Enum):
+    RUNTIME: str = 'runtime'
+    TIMESTEP: str = 'timestep'
+    SPLIT_RUNS: str = 'split_runs'
     MAX_NEURONS_PER_COMPUTE_UNIT: str = 'max_neurons_per_compute_unit'  # i.e. core, chip
 
 def export_configurations(configurations: Dict[str, Any]) -> Statement:
@@ -23,7 +26,7 @@ def export_configurations(configurations: Dict[str, Any]) -> Statement:
 # note: this is even a sPyNNaker-only setting
 #  this tells the front-end how many neurons (maximum) are allowed to be
 #  simulated per ARM core (NOT per SpiNNaker chip)
-def export_max_neurons_per_core(configuration: List[Tuple[str, Any]]) -> Statement:
+def export_max_neurons_per_core(configuration: List[Tuple[str, Union[int, Tuple[int]]]]) -> Statement:
     """
     :param configuration: a list of tuples containing:
         . neuron types (e.g. IF_curr_exp, IZK_curr_delta, etc.)

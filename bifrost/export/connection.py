@@ -30,21 +30,22 @@ def export_connection(connection: Connection, context: ParameterContext[str],
             f"{text_spaces}{synapse.value})",
     ]
     projection_text = f"{join_str}{text_spaces}".join(projection)
-
+    pre_name = connection.pre.variable('')
+    post_name = connection.post.variable('')
     statement_text = (
         f"{variable_name} = {{\n"
         f"channel_in: \n"
         f"{text_spaces}{{channel_out: {projection_text}\n"
-        f"{text_spaces * 2}for channel_out in range({connection.post.channels})\n"
+        f"{text_spaces * 2}for channel_out in {post_name}\n"
         f"{text_spaces}}}\n"
-        f"{text_spaces}for channel_in in range({connection.pre.channels})\n"
+        f"{text_spaces}for channel_in in {pre_name}\n"
         f"}}\n"
     )
 
     if len(connector.configuration):
         configuration_text = (
-            f"for channel_in in range({connection.pre.channels}):\n"
-            f"{text_spaces}for channel_out in range({connection.post.channels}):\n"
+            f"for channel_in in {pre_name}:\n"
+            f"{text_spaces}for channel_out in {post_name}:\n"
             f"{text_spaces * 2}{connector.configuration}\n"
         )
     else:
@@ -122,12 +123,16 @@ def export_dense(connection: Connection[Layer, Layer],
                  spaces: int = 8) -> Statement:
     spaces_text = " " * spaces
     connector = connection.connector
-    weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
+    n_in_channels = connection.pre.channels
+    n_out_neurons = connection.post.size
     pool_shape, pool_stride = (
         context.conv2d_pooling(connector.pooling_key)
         if (connector.pooling_key != DefaultLayerKeys.POOLING)
         else ('None', 'None')
     )
+    weights = context.linear_weights(connector.weights_key, channel_in,
+                                     n_in_channels, n_out_neurons)
+
     # todo: pool padding here needs to be added but I'm not sure if truly needed
     return ConnectionStatement(
         f"{SIMULATOR_NAME}.PoolDenseConnector({weights}, \n"

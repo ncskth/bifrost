@@ -1,7 +1,10 @@
 from bifrost.export.statement import Statement
+from bifrost.export.utils import export_layer_shape
 from bifrost.ir import Network
-from bifrost.ir.layer import NeuronLayer, Layer
-from bifrost.text_utils import sanitize
+from bifrost.ir.layer import Layer
+from bifrost.ir.input import ImageDataset
+from bifrost.export.constants import SAVE_VARIABLE_NAME
+from bifrost.export.input import export_input_configuration
 
 def export_record(layer: Layer) -> Statement:
     variable_name = layer.variable('')
@@ -14,7 +17,7 @@ def export_record(layer: Layer) -> Statement:
         recordings = ", ".join(f"\"{r}\"" for r in layer.record)
         recordings = f"[{recordings}]"
     tab = " " * 4
-    txt = (f"for channel in range({layer.channels}):\n"
+    txt = (f"for channel in {variable_name}:\n"
            f"{tab}{variable_name}[channel].record({recordings})")
 
     return Statement(txt)
@@ -30,18 +33,28 @@ def export_grab_recordings_back(layer: Layer) -> Statement:
     return Statement(txt)
 
 
-def export_save_recordings(network: Network):
+def export_save_recordings(network: Network) -> Statement:
     tab = " " * 4
     recordings_list = [f"\"{lyr.variable('')}\": {export_grab_recordings_back(lyr)}"
                        for lyr in network.layers if len(lyr.record)]
     if len(recordings_list):
-        variable_name = "__recordings"
-        variable_init_text = f",\n{tab}".join(recordings_list)
-        save_filename = f"{sanitize(network.name)}_recordings.npz"
-        save_output_text = f"np.savez_compressed(\"{save_filename}\", **{variable_name})"
+        input_layer = network.layers[0]
+        input_config = export_input_configuration(input_layer)
+
+        record_variable_name = "__recordings"
+        record_init_text = f",\n{tab}".join(recordings_list)
+
+        shapes_variable_name = "__network_shapes"
+        shapes_list = [f"\"{lyr.variable('')}\": {export_layer_shape(lyr)}"
+                       for lyr in network.layers if len(lyr.record)]
+        shapes_init_text = f",\n{tab}".join(shapes_list)
+
         statement_text = (
-            f"{variable_name} = {{\n{tab}{variable_init_text}\n}}\n"
-            f"{save_output_text}\n"
+            f"{record_variable_name} = {{\n{tab}{record_init_text}\n}}\n"
+            f"{shapes_variable_name} = {{\n{tab}{shapes_init_text}\n}}\n"
+            f"{SAVE_VARIABLE_NAME}[\"recordings\"] = {record_variable_name}\n"
+            f"{SAVE_VARIABLE_NAME}[\"shapes\"] = {shapes_variable_name}\n"
+            f"{SAVE_VARIABLE_NAME}[\"input_configuration\"] = {input_config}"
         )
         return Statement(statement_text, imports=["import numpy as np"])
     else:

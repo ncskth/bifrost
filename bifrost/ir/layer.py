@@ -2,12 +2,12 @@ from bifrost.ir.parameter import ParameterContext
 from dataclasses import dataclass
 from bifrost.ir.cell import Cell, LIFCell
 from bifrost.ir.synapse import Synapse, StaticSynapse
-from typing import Dict, List, Set
 from bifrost.text_utils import sanitize
-
+from bifrost.ir.bases import LayerBase, NetworkBase, ConnectionBase
+from typing import Dict, List, Set, Optional
 
 @dataclass
-class Layer:
+class Layer(LayerBase):
     name: str
     size: int
     channels: int
@@ -24,6 +24,7 @@ class Layer:
 
 @dataclass
 class NeuronLayer(Layer):
+    dt: float = 1.0
     cell: Cell = LIFCell()
     synapse: Synapse = StaticSynapse()
     index: int = 0  # todo: not sure we use this anymore
@@ -31,6 +32,9 @@ class NeuronLayer(Layer):
     key: str = ""
     shape: List[int] = (1, 1)
     record: List[str] = ()
+    network: Optional[NetworkBase] = None
+    incoming_connection: Optional[ConnectionBase] = None
+    outgoing_connection: Optional[ConnectionBase] = None
 
     def __repr__(self):
         return super().__repr__()

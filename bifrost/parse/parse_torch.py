@@ -28,9 +28,14 @@ from bifrost.ir.synapse import (
 
 from bifrost.ir.parameter import ParameterContext
 from bifrost.ir.network import Network
-from bifrost.ir.constants import SynapseTypes, SynapseShapes
+from bifrost.ir.constants import SynapseTypes, SynapseShapes, DefaultLayerKeys
 from bifrost.extract.utils import try_reduce_param
-from bifrost.extract.torch.parameter_buffers import DONT_PARSE_THESE_MODULES
+from bifrost.extract.torch.parameter_buffers import (set_parameter_buffers,
+                                                     DONT_PARSE_THESE_MODULES)
+from bifrost.parse.utils import adjust_runtime
+from bifrost.parse.constants import DEFAULT_RUNTIME, DEFAULT_DT
+
+
 # todo: remove all the magic constants and move them to a common file
 
 Continuation = Callable[[Network], Network]
@@ -40,7 +45,11 @@ CHANNEL_INDEX = 1
 
 def trimed_named_modules(torch_net: torch.nn.Module):
     def _invalid(k, modules):
-        return (isinstance(modules[k], DONT_PARSE_THESE_MODULES) or k == '')
+        instance_invalid = isinstance(modules[k], DONT_PARSE_THESE_MODULES)
+        is_topmost = k == ''  # means top-most module
+        has_children = len(list(modules[k].children()))
+        return (is_topmost or has_children or instance_invalid)
+
 
     # this expands inner SequentialStates
     modules = dict(torch_net.named_modules())
@@ -56,11 +65,20 @@ def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[st
     # Batch size, Number of Channels, Height, Width
     # this has to be in [e.g. (8, 3, 28, 28)] BCYX format
     input_shape = (1, input_layer.channels, *input_layer.source.shape)
+    # input_shape = (input_layer.channels, *input_layer.source.shape)
 
     shapes = {}
     x = torch.randn(input_shape)
-    for i, k in enumerate(modules):
+    keys = list(modules.keys())
+    last_module = modules[keys[0]]
+    for i, k in enumerate(keys):
         print(k)
+        print(x.shape)
+        print(modules[k].__class__.__name__)
+        if isinstance(modules[k], torch.nn.Linear):
+            x = x.view(1, -1)
+            print(x.shape)
+
         x = modules[k](x)
 
         # first is output of previous layer, second is the state
@@ -73,16 +91,30 @@ def get_shapes(modules: Dict[str, torch.nn.Module], network: Network) -> Dict[st
 def torch_to_network(model: torch.nn.Module, input_layer: InputLayer,
         output_layer: OutputLayer, config: Dict[str, Any]={}) -> Network:
 
-    if not isinstance(model, (norse.SequentialState, pl.LightningModule)):
+    __acceptable_parents = (
+        norse.SequentialState, pl.LightningModule, torch.nn.Module
+    )
+    if not isinstance(model, __acceptable_parents):
             raise ValueError("Unknown model type", type(model))
 
-    runtime = config.get('runtime', -1.0)  # run forever if not specified
-    timestep = config.get("timestep", 1.0)
+    # default is 0, don't run if  no time is specified
+    runtime = adjust_runtime(config.get('runtime', DEFAULT_RUNTIME),
+                             input_layer)
+    timestep = config.get("timestep", DEFAULT_DT)
+    configuration = config.get('configuration', {})
 
     net_dict = trimed_named_modules(model)
+    source_dt = 1.0
+    for k in net_dict:
+        class_name = net_dict[k].__class__.__name__
+        if 'LIF' in class_name:
+            source_dt = net_dict[k].dt
+            break
 
     default_network = Network(layers=[input_layer], connections=[],
-                              runtime=runtime, timestep=timestep)
+                              runtime=runtime, timestep=timestep,
+                              source_dt=source_dt,
+                              configuration=configuration)
 
     network = module_to_ir(modules=net_dict, network=default_network)
 
@@ -127,14 +159,24 @@ def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Netwo
             continue
 
         if name in ['licell', 'lifcell']:
-            size = int(np.prod(shape[START_OF_POPULATION_SHAPE_INDEX:]))
-            channels = shape[CHANNEL_INDEX]
+            _shape = shape[START_OF_POPULATION_SHAPE_INDEX:]
+            size = int(np.prod(_shape))
+            channels = 1 if len(shape) == 2 else shape[CHANNEL_INDEX]
             cell = __choose_cell(mod)
+
+            # todo: get this from some configuration
+            cell.reset_variables_values = [('v', 0.0)]
+            # end-todo
+
             connector = __get_connector(last_neuron_idx + 1, idx, keys, modules)
             synapse = __get_synapse(last_neuron_idx + 1, idx, keys, modules)
-            post = NeuronLayer(f"{name}_{k}", size, channels, cell=cell,
-                               synapse=synapse, key=k)
-            conn = Connection(layers[-1], post, connector)
+            post = NeuronLayer(f"{name}_{k}", size, channels, dt=network.source_dt,
+                               cell=cell, synapse=synapse, key=k, shape=_shape,
+                               network=network)
+            conn = Connection(layers[-1], post, connector, network=network)
+
+            post.incoming_connection = conn
+            layers[-1].outgoing_connection = conn
 
             layers.append(post)
             connections.append(conn)
@@ -160,10 +202,12 @@ def __choose_cell(module: torch.nn.Module):
 
 
 def __choose_synapse_shape(torch_params):
-    if hasattr(torch_params, 'alpha'):
-        return SynapseShapes.ALPHA
-    else:  # note: do we support delta?
-        return SynapseShapes.EXPONENTIAL
+    # if hasattr(torch_params, 'alpha'):
+    #     return SynapseShapes.ALPHA
+    # else:  # note: do we support delta?
+    #     return SynapseShapes.EXPONENTIAL
+    # TODO: I think Norse just does exponential synapses
+    return SynapseShapes.EXPONENTIAL
 
 
 def __get_synapse(start_index: int, end_index: int, keys: List[str],
@@ -179,7 +223,8 @@ def __get_synapse(start_index: int, end_index: int, keys: List[str],
             synapse = DenseSynapse()
             break
         elif 'linear' in module_class_name:
-            synapse = StaticSynapse()
+            synapse = DenseSynapse()
+            # synapse = StaticSynapse()
             break
         elif 'avgpool2d' in module_class_name:  # these usually come after conv2d
             continue
@@ -199,8 +244,13 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
     connector = None
     for conn_idx in range(start_idx, end_idx):
         k = keys[conn_idx]
-        module_class_name = modules[k].__class__.__name__.lower()
-        pool_key = '' if pool_index is None else str(pool_index)
+        module = modules[k]
+        module_class_name = module.__class__.__name__.lower()
+        pool_key = (
+            DefaultLayerKeys.POOLING if pool_index is None else str(pool_index)
+        )
+        bias_key = (keys[conn_idx]
+                    if hasattr(module, 'bias') else DefaultLayerKeys.BIAS)
         if 'conv2d' in module_class_name:
             connector = ConvolutionConnector(str(k), pooling_key=pool_key)
             break
@@ -208,12 +258,18 @@ def __get_connector(start_idx: int, end_idx: int, keys: List[str],
             connector = DenseConnector(str(k), pooling_key=pool_key)
             break
         elif 'linear' in module_class_name:
-            connector = MatrixConnector(str(k))
+            connector = DenseConnector(str(k), pooling_key=pool_key)
+            # todo: do we really need the Matrix connector?
+            # connector = MatrixConnector(str(k))
             break
         elif 'avgpool2d' in module_class_name:
             pool_index = k
             continue
+
+
         # this should not be reached
         raise ValueError("Unknown connector", module_class_name)
+
+    connector.bias_key = bias_key
 
     return connector

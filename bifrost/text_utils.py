@@ -1,5 +1,6 @@
 from copy import copy
 
+TAB = " " * 4
 
 def remove_blank(text: str) -> str:
     t = copy(text)

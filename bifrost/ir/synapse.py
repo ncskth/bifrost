@@ -1,5 +1,10 @@
 from dataclasses import dataclass
-from typing import Literal
+import sys
+version = sys.version_info
+if version.major >= 3 and version.minor >= 8:
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 from bifrost.ir.constants import SynapseShapes, SynapseTypes
 
 @dataclass

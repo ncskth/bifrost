@@ -1,7 +1,7 @@
 from ast import literal_eval as make_tuple
 
 import numpy as np
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Optional, Any
 
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.input import InputLayer
@@ -43,18 +43,19 @@ def set_recordings(network, record: Dict[str, List[int]]) -> Network:
 def get_parser_and_saver(model):
     class_name = model.__class__.__name__.lower()
     # for torch/norse
-    if 'sequentialstate' in class_name and hasattr(model, '_modules'):
+    if 'sequentialstate' in class_name or hasattr(model, '_modules'):
         from bifrost.export.torch import TorchContext
         from bifrost.parse.parse_torch import torch_to_network, torch_to_context
         import torch
         def parse_torch(model: torch.nn.Module, input_layer: InputLayer,
-                        output_layer: OutputLayer) -> Tuple[Network, ParameterContext[str]]:
-            network = torch_to_network(model, input_layer, output_layer)
+                        output_layer: Optional[OutputLayer] = None,
+                        config: Dict[str, Any] = {}) -> Tuple[Network, ParameterContext[str]]:
+            network = torch_to_network(model, input_layer, output_layer, config=config)
             context, net_dict = torch_to_context(network, model)
             return network, context, net_dict
 
         def save_net_dict(net_dict, filename):
-            np.savez_compressed(filename, **net_dict)
+            pass
 
         return parse_torch, save_net_dict
 
@@ -66,5 +67,7 @@ def get_parser_and_saver(model):
 
         return ml_genn_to_network, save_net_dict
 
+    else:
+        raise Exception(f"Not supported model: {model}")
 
 
