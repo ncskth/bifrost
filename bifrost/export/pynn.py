@@ -31,9 +31,9 @@ class PyNNSynapseShapes(Enum): # post-synaptic potential (kernel?) shape
     DELTA = 'delta'
 
 class PyNNNeuronTypes(Enum):
-    LI = 'IF'  # leaky-integrate neuron (DOESN'T FIRE)
+    LI = 'LI'  # leaky-integrate neuron (DOESN'T FIRE)
     LIF = 'IF'  # leaky-integrate and fire neuron
-    NIF = 'NIF'  # (NON-leaky) integrate and fire neuron
+    NIF = 'NIF'  # (NON-leaky) integrate and fire neuron [McCulloch-Pitts]
 
 
 def export_structure(layer: Layer) -> Statement:
