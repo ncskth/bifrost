@@ -24,7 +24,7 @@ class Layer(LayerBase):
 
 @dataclass
 class NeuronLayer(Layer):
-    dt: float = 1.0
+    dt: float = 1.0  # simulation time step (multiples of 1 ms)
     cell: Cell = LIFCell()
     synapse: Synapse = StaticSynapse()
     index: int = 0  # todo: not sure we use this anymore
