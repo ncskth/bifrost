@@ -32,7 +32,7 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     header = f"{pynn.pynn_header(timestep=network.timestep)}{context.preamble}"
 
     # Configs (after setup in PyNN)
-    config = export_configurations(network.configuration).value
+    config = export_configurations(network, network.configuration).value
 
     # Body
     body = "\n".join(list(preambles) + statements)
@@ -53,7 +53,7 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     # Footer
     footer = pynn.pynn_footer()
 
-    simulation_stages = [imps, header, config, body, runner, get_records,
+    simulation_stages = [imps, header, body, config, runner, get_records,
                          save_output_text, footer]
 
     return "\n".join(simulation_stages)
