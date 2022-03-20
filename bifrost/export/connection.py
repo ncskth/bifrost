@@ -86,7 +86,10 @@ def export_all_to_all(connection: Connection[Layer, Layer],
                       context: ParameterContext[str],
                       spaces: int = 8) -> Statement:
     connector = connection.connector
-    weights = context.linear_weights(connector.weights_key, channel_in, channel_out)
+    n_in_channels = connection.pre.channels
+    n_out_neurons = connection.post.size
+    weights = context.linear_weights(connector.weights_key, channel_in,
+                                     n_in_channels, n_out_neurons)
     variable_name = connection.variable("", "")
     return ConnectionStatement(
         f"{SIMULATOR_NAME}.AllToAllConnector()",
