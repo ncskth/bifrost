@@ -34,13 +34,21 @@ def test_export_empty():
 
 def test_export_neurons_per_core():
     c = MockContext()
-    n = Network([], [], 100.1, config=["some", "config"])
+    run_time = 100.1
+    n = Network([], [], run_time, configuration=["some", "config"])
     out = export_network(n, c)
     imports = "\n".join(sorted(set(pynn.pynn_imports + c.imports)))
-    assert (
-        out
-        == f"{imports}\n{pynn.pynn_header(1.0)}\n{c.preamble}\nsome\nconfig\n\n{pynn.pynn_footer(100.1)}"
+    expected = (
+        f"{imports}\n"
+        f"{pynn.pynn_header(1.0)}\n"
+        f"{c.preamble}\n"
+        f"some\n"
+        f"config\n\n"
+        f"{pynn.pynn_runner(run_time)}"
+        f"{pynn.pynn_footer()}"
     )
+
+    assert ( remove_blank(out) == remove_blank(expected))
 
 
 def test_export_single():

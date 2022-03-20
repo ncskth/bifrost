@@ -1,5 +1,6 @@
 import copy
 import warnings
+from warnings import warn
 from typing import Dict, Any, List, Tuple, Union
 from enum import Enum
 from bifrost.text_utils import TAB
@@ -40,7 +41,9 @@ def export_configurations(network:NetworkBase,
             statement += export_max_neurons_per_layer_type(
                             network, configurations[config])
         else:
-            warn(f"Configuration {config} is not supported!")
+            warn(f"Configuration {config} is not supported!"
+                 "Passing as is :O")
+            statement += Statement(config)
 
     return statement
 
