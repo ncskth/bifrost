@@ -44,8 +44,18 @@ def export_structure(layer: Layer) -> Statement:
 
 def export_split_run(network: Network, runtime: float,
                      runner_function: Callable[[float], str] = pynn_runner) -> Statement:
+    if len(network.layers) == 0:
+        # empty network!
+        return Statement(runner_function(runtime))
+
     in_layer = network.layers[0]
+
+    # don't assume first layer is a source
+    if not(hasattr(in_layer, "source")):
+        return Statement(runner_function(runtime))
+
     source = in_layer.source
+
     # so far, only ImageDataset inputs can benefit from splitting the run into
     # multiple chuncks (one per input image sample) and resetting neuron values
     if not isinstance(source, ImageDataset):

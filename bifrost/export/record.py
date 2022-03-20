@@ -36,7 +36,7 @@ def export_grab_recordings_back(layer: Layer) -> Statement:
 def export_save_recordings(network: Network) -> Statement:
     tab = " " * 4
     recordings_list = [f"\"{lyr.variable('')}\": {export_grab_recordings_back(lyr)}"
-                       for lyr in network.layers if len(lyr.record)]
+                       for lyr in network.layers if hasattr(lyr, "record") and len(lyr.record)]
     if len(recordings_list):
         input_layer = network.layers[0]
         input_config = export_input_configuration(input_layer)

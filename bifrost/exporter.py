@@ -18,7 +18,11 @@ def export_network(network: Network, context: ParameterContext[str]) -> str:
     statements = []
     imports = set(pynn.pynn_imports + context.imports)
 
-    preambles = set([f"{SAVE_VARIABLE_NAME} = {{}}\n"])
+    preambles = set()
+    any_record = [1 for lyr in network.layers if hasattr(lyr, "record") and len(lyr.record)]
+    if any_record:
+        preambles |= set([f"{SAVE_VARIABLE_NAME} = {{}}\n"])
+
     for stmt in pynn_layers + connections:
         if stmt is not None:
             statements.append(stmt.value)

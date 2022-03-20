@@ -1,3 +1,5 @@
+import warnings
+
 from bifrost.export.output import export_layer_output
 from bifrost.export.utils import export_list_var
 from bifrost.ir.layer import NeuronLayer, Layer
@@ -47,6 +49,10 @@ def export_cell_params(layer: Layer, context: ParameterContext[str],
 
 def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
     in_conn = layer.incoming_connection
+    if in_conn is None:
+        warnings.warn(f"No incomming connection to {Layer}, no bias can be set")
+        return Statement()
+
     bias_key = getattr(in_conn.connector, "bias_key", DefaultLayerKeys.BIAS)
     if bias_key == DefaultLayerKeys.BIAS:
         bias_text = ""
@@ -80,7 +86,7 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     else:
         raise ValueError("Unknown layer type", layer)
 
-    if len(layer.record):
+    if hasattr(layer, "record") and len(layer.record):
         statement += export_record(layer)
 
     # just add a break to separate populations for each layer
