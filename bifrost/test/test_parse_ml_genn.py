@@ -6,6 +6,7 @@ from bifrost.ir.synapse import (Synapse, StaticSynapse, DenseSynapse, Convolutio
 from bifrost.ir.layer import (NeuronLayer)
 from bifrost.ir.connection import (Connector, DenseConnector, AllToAllConnector,
                                    MatrixConnector, ConvolutionConnector)
+from bifrost.ir.network import Network
 import pytest
 
 
@@ -80,7 +81,7 @@ def test_to_neuron_layer_size_vs_shape():
         x = to_neuron_layer(index, net_dict)
 
 
-def test_to_connectioN():
+def test_to_connection():
     pre = NeuronLayer('pre', 1, 1, key='pre')
     post = NeuronLayer('post', 1, 1, key='post')
 
@@ -88,9 +89,11 @@ def test_to_connectioN():
                     'AllToAllConnector': AllToAllConnector,
                     'MatrixConnector': MatrixConnector,
                     'ConvolutionConnector': ConvolutionConnector}
+    net = Network(layers=[], connections=[])
     for conn_name in translations:
         net_dict = {'post': {'connector_type': conn_name, 'params': {}}}
-        conn = to_connection(pre, post, net_dict)
+
+        conn = to_connection(pre, post, net_dict, net)
         assert isinstance(conn.connector, Connector)
         assert isinstance(conn.connector, translations[conn_name])
 
