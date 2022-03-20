@@ -5,7 +5,7 @@ from bifrost.export.population import export_layer_neuron
 from bifrost.exporter import export_network
 from bifrost.export import pynn
 from bifrost.export.torch import TorchContext
-
+from bifrost.text_utils import remove_blank
 
 class MockContext(ParameterContext):
     preamble = "Dubi\ndubi\ndubi\ndubdubdub"
@@ -16,12 +16,21 @@ torch_context = TorchContext({"l": "0"})
 
 
 def test_export_empty():
+    run_time = 100.1
     c = MockContext()
-    n = Network([], [], 100.1)
+    n = Network([], [], run_time)
     out = export_network(n, c)
     imports = "\n".join(sorted(set(pynn.pynn_imports + c.imports)))
-    assert out == f"{imports}\n{pynn.pynn_header(1.0)}\n{c.preamble}\n\n{pynn.pynn_footer(100.1)}"
-
+    test = (
+        f"{imports}\n" 
+        f"{pynn.pynn_header(1.0)}\n"
+        f"{c.preamble}\n"
+        f"{pynn.pynn_runner(run_time)}"
+        f"{pynn.pynn_footer()}"
+    )
+    eout = remove_blank(out)
+    etest = remove_blank(test)
+    assert eout == etest
 
 def test_export_neurons_per_core():
     c = MockContext()
