@@ -22,4 +22,4 @@ if __name__ == "__main__":
     net, tmp = generate_linear()
     with open(weights_file, "wb") as fp:
         fp.write(tmp.read())
-    #export(net, "(1, 2)", sys.stdout)
+    # export(net, "(1, 2)", sys.stdout)

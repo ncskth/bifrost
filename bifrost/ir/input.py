@@ -3,9 +3,11 @@ from bifrost.ir.layer import Layer
 from typing import Dict, List, Set, Any
 from bifrost.ir.bases import InputSourceBase
 
+
 @dataclass
 class InputSource(InputSourceBase):
     shape: List[int]
+
 
 @dataclass
 class ImageDataset(InputSource):
@@ -46,6 +48,7 @@ class ImageDataset(InputSource):
 class PoissonImageDataset(ImageDataset):
     pixel_to_rate_transform: str
 
+
 @dataclass
 class SpiNNakerSPIFInput(InputSource):
     x_sub: int = 32
@@ -61,9 +64,11 @@ class SpiNNakerSPIFInput(InputSource):
     def y(self):
         return self.shape[0]
 
+
 @dataclass
 class RandomPoissonSource(InputSource):
     rates: List[int]
+
 
 class DummyTestInputSource(InputSource):
     # this is just needed for testing and throwing non-known source types
@@ -78,4 +83,3 @@ class InputLayer(Layer):
     @property
     def num_channels_variable(self):
         return "__n_channels"
-

@@ -1,4 +1,5 @@
 from compynator import *
+
 # class PyNNLayer(NamedTuple):
 #     cell: str
 #     params: dict

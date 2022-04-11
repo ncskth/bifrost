@@ -7,10 +7,12 @@ from bifrost.ir.layer import Layer
 class OutputSink:
     pass
 
+
 @dataclass
 class EthernetOutput(OutputSink):
     host: Optional[str] = "localhost"
     port: Optional[int] = 3333
+
 
 class DummyTestOutputSink(OutputSink):
     # this is just needed for testing and throwing non-known source types

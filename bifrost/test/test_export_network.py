@@ -24,7 +24,7 @@ def test_export_empty():
     out = export_network(n, c)
     imports = "\n".join(sorted(set(pynn.pynn_imports + c.imports)))
     test = (
-        f"{imports}\n" 
+        f"{imports}\n"
         f"{pynn.pynn_header(1.0)}\n"
         f"{c.preamble}\n"
         f"{pynn.pynn_runner(run_time)}"
@@ -33,6 +33,7 @@ def test_export_empty():
     eout = remove_blank(out)
     etest = remove_blank(test)
     assert eout == etest
+
 
 def test_export_neurons_per_core():
     c = MockContext()
@@ -50,7 +51,7 @@ def test_export_neurons_per_core():
         f"{pynn.pynn_footer()}"
     )
 
-    assert ( remove_blank(out) == remove_blank(expected))
+    assert remove_blank(out) == remove_blank(expected)
 
 
 def test_export_single():
@@ -64,7 +65,9 @@ def test_export_single():
     net = Network([l], set(), run_time)
     out = export_network(net, torch_context)
     lif = export_layer_neuron(l, torch_context)
-    imports = "\n".join(sorted(set(torch_context.imports + pynn.pynn_imports + lif.imports)))
+    imports = "\n".join(
+        sorted(set(torch_context.imports + pynn.pynn_imports + lif.imports))
+    )
     lif_defs = "\n".join(list(set(lif.preambles)))
     expected = (
         f"{imports}\n"
@@ -76,4 +79,4 @@ def test_export_single():
         f"{pynn.pynn_footer()}\n"
     )
 
-    assert (remove_blank(out) == remove_blank(expected))
+    assert remove_blank(out) == remove_blank(expected)

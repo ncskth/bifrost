@@ -1,24 +1,29 @@
 import numpy as np
 from ml_genn.layers.enum import PadMode
 
+
 def kernel_weight_transform(weights):
     return np.copy(weights)
 
+
 def decode_conv_padding(synapse):
-    kshape = np.asarray(synapse.conv_size, dtype='int')
+    kshape = np.asarray(synapse.conv_size, dtype="int")
     padding = synapse.conv_padding
     return decode_padding(kshape, padding)
 
+
 def decode_pool_padding(synapse):
-    kshape = np.asarray(synapse.pool_size, dtype='int')
+    kshape = np.asarray(synapse.pool_size, dtype="int")
     padding = synapse.pool_padding
     return decode_padding(kshape, padding)
 
+
 def decode_padding(kshape, padding):
     if padding == PadMode.VALID:
-        return np.asarray((0, 0), dtype='int')
+        return np.asarray((0, 0), dtype="int")
     elif padding == PadMode.SAME:
-        return ((kshape - 1) // 2)
+        return (kshape - 1) // 2
+
 
 def to_channels_first(synapse):
     n_in_channels = synapse.pool_output_shape[-1]
@@ -38,8 +43,9 @@ def to_channels_first(synapse):
 
     return out_weights
 
+
 def dense_weight_transform(synapse):
-    if hasattr(synapse, 'pool_output_shape'):
+    if hasattr(synapse, "pool_output_shape"):
         # NOTE: if the previous layer was convolutional we need to decode in the
         #       to move the channels first and index appropriatelly
         return to_channels_first(synapse)
@@ -49,6 +55,3 @@ def dense_weight_transform(synapse):
         #       pre and post. Last two dimensions are the pre and post sizes.
         weights = synapse.weights
         return weights.reshape((1, 1, weights.shape[0], weights.shape[1]))
-
-
-

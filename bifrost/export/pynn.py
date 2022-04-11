@@ -10,40 +10,46 @@ SIMULATOR_NAME = "spynn"
 
 pynn_imports = [f"import spynnaker8 as {SIMULATOR_NAME}"]
 
+
 def pynn_header(timestep=1.0):
     return f"{SIMULATOR_NAME}.setup({timestep})\n"
 
+
 def pynn_runner(runtime: float, tab: str = "") -> str:
-    return (f"{tab}run_time = {runtime}  # ms\n"
-            f"{tab}{SIMULATOR_NAME}.run(run_time)\n")
+    return f"{tab}run_time = {runtime}  # ms\n" f"{tab}{SIMULATOR_NAME}.run(run_time)\n"
+
 
 def pynn_footer():
     return f"{SIMULATOR_NAME}.end()\n"
 
 
 class PyNNSynapseTypes(Enum):  # current transfer
-    CURRENT = 'curr'
-    CONDUCTANCE = 'cond'
+    CURRENT = "curr"
+    CONDUCTANCE = "cond"
 
-class PyNNSynapseShapes(Enum): # post-synaptic potential (kernel?) shape
-    EXPONENTIAL = 'exp'
-    ALPHA = 'alpha'
-    DELTA = 'delta'
+
+class PyNNSynapseShapes(Enum):  # post-synaptic potential (kernel?) shape
+    EXPONENTIAL = "exp"
+    ALPHA = "alpha"
+    DELTA = "delta"
+
 
 class PyNNNeuronTypes(Enum):
-    LI = 'LI'  # leaky-integrate neuron (DOESN'T FIRE)
-    LIF = 'IF'  # leaky-integrate and fire neuron
-    NIF = 'NIF'  # (NON-leaky) integrate and fire neuron [McCulloch-Pitts]
+    LI = "LI"  # leaky-integrate neuron (DOESN'T FIRE)
+    LIF = "IF"  # leaky-integrate and fire neuron
+    NIF = "NIF"  # (NON-leaky) integrate and fire neuron [McCulloch-Pitts]
 
 
 def export_structure(layer: Layer) -> Statement:
     ratio = float(layer.shape[1]) / layer.shape[0]
-    return Statement(f"Grid2D({ratio})",
-                     imports=['from pyNN.space import Grid2D'])
+    return Statement(f"Grid2D({ratio})", imports=["from pyNN.space import Grid2D"])
 
 
-def export_split_run(network: Network, runtime: float,
-                     runner_function: Callable[[float], str] = pynn_runner) -> Statement:
+def export_split_run(
+    network: Network,
+    runtime: float,
+    runner_function: Callable[[float], str] = pynn_runner,
+) -> Statement:
     if len(network.layers) == 0:
         # empty network!
         return Statement(runner_function(runtime))
@@ -51,7 +57,7 @@ def export_split_run(network: Network, runtime: float,
     in_layer = network.layers[0]
 
     # don't assume first layer is a source
-    if not(hasattr(in_layer, "source")):
+    if not (hasattr(in_layer, "source")):
         return Statement(runner_function(runtime))
 
     source = in_layer.source
@@ -72,7 +78,7 @@ def export_split_run(network: Network, runtime: float,
         if len(cell.reset_variables_values) == 0:
             continue
 
-        layer_name = layer.variable('')
+        layer_name = layer.variable("")
         var_setting = []
         for variable_name, reset_value in cell.reset_variables_values:
             setting_text = set_var.format(layer_name, variable_name, reset_value)
@@ -90,7 +96,6 @@ def export_split_run(network: Network, runtime: float,
         f"for sample_id in range({source.num_samples_variable}):\n"
         f"{resets_text}\n\n"
         f"{run_text}\n"
-
     )
 
     return Statement(statement_text)

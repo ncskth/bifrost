@@ -15,8 +15,10 @@ def export_dict(d: Dict[Any, Any], join_str=",\n", n_spaces=0) -> Statement:
         else:
             return str(value)
 
-    pynn_dict = [f"{_export_dict_key(key)}={_export_dict_value(value)}"
-                 for key, value in d.items()]
+    pynn_dict = [
+        f"{_export_dict_key(key)}={_export_dict_value(value)}"
+        for key, value in d.items()
+    ]
     spaces = " " * n_spaces
     return Statement((f"{join_str}{spaces}").join(pynn_dict), [])
 
@@ -26,7 +28,7 @@ def export_list_var(var: str, l: List[str], join_str=", ", n_spaces=0):
     return f"{var} = [{lst}]"
 
 
-def export_list(l: List[str], join_str=", ", n_spaces=0, q="\""):
+def export_list(l: List[str], join_str=", ", n_spaces=0, q='"'):
     spaces = " " * n_spaces
     return (f"{join_str}{spaces}").join([f"{q}{v}{q}" for v in l])
 

@@ -6,8 +6,12 @@ from bifrost.ir.parameter import ParameterContext
 
 
 class TorchContext(ParameterContext[str]):
-    imports = ["import numpy as np", "import torch", "import sys",
-               "from bifrost.extract.utils import try_reduce_param"]
+    imports = [
+        "import numpy as np",
+        "import torch",
+        "import sys",
+        "from bifrost.extract.utils import try_reduce_param",
+    ]
     preamble = """
 
 _checkpoint = torch.load(sys.argv[1])
@@ -63,36 +67,38 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, str]) -> None:
         self.layer_map = layer_map
 
-    def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> str:
-        return (f"_params[\"{layer}.weight\"].reshape(({num_out_neurons}, {num_in_channels}, -1))"
-                f"[:, {channel_in}, :].detach().numpy().T")
+    def linear_weights(
+        self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int
+    ) -> str:
+        return (
+            f'_params["{layer}.weight"].reshape(({num_out_neurons}, {num_in_channels}, -1))'
+            f"[:, {channel_in}, :].detach().numpy().T"
+        )
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> str:
         # return f"_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()"
-        return f"np.fliplr(np.flipud(_params[\"{layer}.weight\"][{channel_out}, {channel_in}].detach().numpy()))"
+        return f'np.fliplr(np.flipud(_params["{layer}.weight"][{channel_out}, {channel_in}].detach().numpy()))'
 
     def conv2d_strides(self, layer: str) -> str:
-        return f"_params[\"{layer}.stride\"]"
+        return f'_params["{layer}.stride"]'
 
     def conv2d_padding(self, layer: str) -> str:
-        return f"_params[\"{layer}.padding\"]"
+        return f'_params["{layer}.padding"]'
 
     def conv2d_pooling(self, layer: str) -> str:
-        return (f"_params[\"{layer}.kernel_size\"]", \
-                f"_params[\"{layer}.stride\"]")
+        return (f'_params["{layer}.kernel_size"]', f'_params["{layer}.stride"]')
 
-    def bias_conv2d(self, layer:str, channel: str) -> str:
-        return f"_params[\"{layer}.bias\"][{channel}].detach().numpy()"
+    def bias_conv2d(self, layer: str, channel: str) -> str:
+        return f'_params["{layer}.bias"][{channel}].detach().numpy()'
 
-    def bias_dense(self, layer:str) -> str:
-        return f"_params[\"{layer}.bias\"].detach().numpy()"
+    def bias_dense(self, layer: str) -> str:
+        return f'_params["{layer}.bias"].detach().numpy()'
 
-    def neuron_parameter_base(self, layer:str) -> str:
-        return f"_param_map[{{}}]"\
-               f"(_params[\"{self.layer_map[layer]}.{{}}\"])"
+    def neuron_parameter_base(self, layer: str) -> str:
+        return f"_param_map[{{}}]" f'(_params["{self.layer_map[layer]}.{{}}"])'
 
     def neuron_parameter(self, layer: str, parameter_name: str) -> str:
-        return f"_params[f\"{self.layer_map[layer]}.{{{parameter_name}}}\"]"
+        return f'_params[f"{self.layer_map[layer]}.{{{parameter_name}}}"]'
 
     def parameter_map_name(self, parameter_name: str) -> str:
         return f"_param_map[{parameter_name}]"
@@ -104,5 +110,3 @@ _param_map = {
             return self.li_parameters
         else:
             raise ValueError("Unknown neuron type ", cell)
-
-

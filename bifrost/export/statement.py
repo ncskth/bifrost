@@ -8,8 +8,12 @@ class Statement:
     imports: List[str] = ()
     preambles: List[str] = ()
 
-    def __init__(self, value: Union[str, List[str]] = "", imports: List[str] = (),
-                 preambles: List[str] = ()):
+    def __init__(
+        self,
+        value: Union[str, List[str]] = "",
+        imports: List[str] = (),
+        preambles: List[str] = (),
+    ):
         if isinstance(value, list):
             self.value = "\n".join(value)
         else:
@@ -24,8 +28,7 @@ class Statement:
             imports = list(self.imports) + list(other.imports)
             preambles = list(self.preambles) + list(other.preambles)
             return Statement(
-                f"{value}{other.value}",
-                imports=imports, preambles=preambles
+                f"{value}{other.value}", imports=imports, preambles=preambles
             )
         else:
             raise ValueError("Expected Statement for addition, but found ", other)
@@ -35,7 +38,9 @@ class Statement:
         separator_imports = "\n\n" if len(imports) > 0 else ""
         preambles = "\n".join(self.preambles)
         separator_preambles = "\n\n" if len(preambles) > 0 else ""
-        return f"{imports}{separator_imports}{preambles}{separator_preambles}{self.value}"
+        return (
+            f"{imports}{separator_imports}{preambles}{separator_preambles}{self.value}"
+        )
 
 
 @dataclass

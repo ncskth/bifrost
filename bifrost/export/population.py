@@ -6,19 +6,25 @@ from bifrost.ir.layer import NeuronLayer, Layer
 from bifrost.ir.input import InputLayer, SpiNNakerSPIFInput
 from bifrost.ir.output import OutputLayer
 from bifrost.ir.parameter import ParameterContext
-from bifrost.ir.cell import (LIFCell, LICell, IFCell)
+from bifrost.ir.cell import LIFCell, LICell, IFCell
 from bifrost.ir.connection import ConvolutionConnector, DenseConnector
-from bifrost.ir.constants import (SynapseShapes, SynapseTypes, DefaultLayerKeys)
+from bifrost.ir.constants import SynapseShapes, SynapseTypes, DefaultLayerKeys
 from bifrost.text_utils import TAB
 from bifrost.export.statement import Statement
-from bifrost.export.pynn import (SIMULATOR_NAME, PyNNSynapseShapes,
-                                 PyNNSynapseTypes, PyNNNeuronTypes, export_structure)
+from bifrost.export.pynn import (
+    SIMULATOR_NAME,
+    PyNNSynapseShapes,
+    PyNNSynapseTypes,
+    PyNNNeuronTypes,
+    export_structure,
+)
 from bifrost.export.input import export_layer_input
-from bifrost.export.record import (export_record)
+from bifrost.export.record import export_record
 
 
-def export_cell_params(layer: Layer, context: ParameterContext[str],
-                       join_str:str = ",\n", spaces:int = 8) -> Statement:
+def export_cell_params(
+    layer: Layer, context: ParameterContext[str], join_str: str = ",\n", spaces: int = 8
+) -> Statement:
     # todo: review if this is the best approach
     parameter_variable_name = "_par_name"
     cell_name = layer.cell.__class__.__name__
@@ -29,23 +35,25 @@ def export_cell_params(layer: Layer, context: ParameterContext[str],
     parameter_list_name = "__parameter_names"
     temporary_dictionary_name = "__parameter_dict"
     source_variable_name = "source_variable_name"
-    parameter_source = context.neuron_parameter(
-                        layer_name, source_variable_name)
+    parameter_source = context.neuron_parameter(layer_name, source_variable_name)
     parameter_transform_name = f"__transform_parameter"
     parameter_transform = f"{parameter_transform_name}({parameter_source}, {layer.dt})"
-    parameter_names = export_list_var(parameter_list_name,
-                            context.parameter_names(layer.cell))
+    parameter_names = export_list_var(
+        parameter_list_name, context.parameter_names(layer.cell)
+    )
     map_parameter = context.parameter_map_name(parameter_variable_name)
-    f = (f"def {generator_function_name}():\n"
-         f"{spaces_text}{parameter_names}\n"
-         f"{spaces_text}{temporary_dictionary_name} = dict()\n"
-         f"{spaces_text}for {parameter_variable_name} in {parameter_list_name}:\n"
-         f"{spaces_text * 2}{source_variable_name}, {parameter_transform_name} = {map_parameter}\n"
-         f"{spaces_text * 2}v = {parameter_transform}\n"
-         f"{spaces_text * 2}{temporary_dictionary_name}[{parameter_variable_name}] = v\n"
-         f"{spaces_text}return {temporary_dictionary_name}\n"
+    f = (
+        f"def {generator_function_name}():\n"
+        f"{spaces_text}{parameter_names}\n"
+        f"{spaces_text}{temporary_dictionary_name} = dict()\n"
+        f"{spaces_text}for {parameter_variable_name} in {parameter_list_name}:\n"
+        f"{spaces_text * 2}{source_variable_name}, {parameter_transform_name} = {map_parameter}\n"
+        f"{spaces_text * 2}v = {parameter_transform}\n"
+        f"{spaces_text * 2}{temporary_dictionary_name}[{parameter_variable_name}] = v\n"
+        f"{spaces_text}return {temporary_dictionary_name}\n"
     )
     return Statement(f"**({generator_function_name}())", preambles=[f])
+
 
 def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
     in_conn = layer.incoming_connection
@@ -57,8 +65,8 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
     if bias_key == DefaultLayerKeys.BIAS:
         bias_text = ""
     else:
-        layer_variable_name = layer.variable('')
-        parameter_variable_name = "\"i_offset\""
+        layer_variable_name = layer.variable("")
+        parameter_variable_name = '"i_offset"'
         map_parameter = context.parameter_map_name(parameter_variable_name)
         if isinstance(in_conn.connector, ConvolutionConnector):
             param_text = context.bias_conv2d(bias_key, "channel")
@@ -73,6 +81,7 @@ def export_bias(layer: Layer, context: ParameterContext[str]) -> Statement:
         )
 
     return Statement(bias_text)
+
 
 def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     if isinstance(layer, SpiNNakerSPIFInput):
@@ -94,26 +103,35 @@ def export_layer(layer: Layer, context: ParameterContext[str]) -> Statement:
     return statement
 
 
-def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
-                        param_join_str=", \n", pop_join_str=",\n") -> Statement:
-    layer_variable_name = layer.variable('')
+def export_layer_neuron(
+    layer: NeuronLayer,
+    context: ParameterContext[str],
+    param_join_str=", \n",
+    pop_join_str=",\n",
+) -> Statement:
+    layer_variable_name = layer.variable("")
     var_name_spaces = " " * (len(layer_variable_name) + 4)
     neuron = export_neuron_type(layer, context, join_str=", ", spaces=4)
     structure = export_structure(layer)
     label_template = f"{layer.variable('')}{{channel}}"
 
-    param_template = f"{param_join_str}{var_name_spaces}{TAB}".join([
-            f"{layer.size}", f"{neuron.value}", f"structure={structure.value}",
-            f"label=f\"{label_template}\""])
+    param_template = f"{param_join_str}{var_name_spaces}{TAB}".join(
+        [
+            f"{layer.size}",
+            f"{neuron.value}",
+            f"structure={structure.value}",
+            f'label=f"{label_template}"',
+        ]
+    )
 
     population_text = (
         f"{layer_variable_name} = {{channel: {SIMULATOR_NAME}.Population({param_template})\n"
         f"{var_name_spaces}for channel in range({layer.channels})}}"
     )
 
-    statement = Statement(population_text,
-                          imports=neuron.imports,
-                          preambles=neuron.preambles)
+    statement = Statement(
+        population_text, imports=neuron.imports, preambles=neuron.preambles
+    )
 
     if isinstance(statement.imports, tuple):
         statement.imports = structure.imports
@@ -131,14 +149,18 @@ def export_layer_neuron(layer: NeuronLayer, context: ParameterContext[str],
     return statement
 
 
-def export_neuron_type(layer: NeuronLayer, ctx: ParameterContext[str],
-                       join_str:str = ",\n", spaces:int = 0) -> Statement:
+def export_neuron_type(
+    layer: NeuronLayer,
+    ctx: ParameterContext[str],
+    join_str: str = ",\n",
+    spaces: int = 0,
+) -> Statement:
     pynn_parameter_statement = export_cell_params(layer, ctx, join_str, spaces)
     cell_type = get_pynn_cell_type(layer.cell, layer.synapse)
     return Statement(
         f"{SIMULATOR_NAME}.{cell_type}({pynn_parameter_statement.value})",
         imports=pynn_parameter_statement.imports,
-        preambles=pynn_parameter_statement.preambles
+        preambles=pynn_parameter_statement.preambles,
     )
 
 
@@ -159,7 +181,8 @@ def get_pynn_cell_type(cell, synapse):
         syn_type = SynapseTypes.CONDUCTANCE.value
     else:
         raise NotImplementedError(
-                f"Synapse type not yet available {synapse.synapse_type}")
+            f"Synapse type not yet available {synapse.synapse_type}"
+        )
 
     if synapse.synapse_shape == SynapseShapes.EXPONENTIAL:
         syn_shape = PyNNSynapseShapes.EXPONENTIAL.value
@@ -169,8 +192,7 @@ def get_pynn_cell_type(cell, synapse):
         syn_shape = PyNNSynapseShapes.DELTA.value
     else:
         raise NotImplementedError(
-                f"Synapse 'shape' not yet available {synapse.synapse_shape}")
+            f"Synapse 'shape' not yet available {synapse.synapse_shape}"
+        )
 
     return "{}_{}_{}".format(cell_type, syn_type, syn_shape)
-
-

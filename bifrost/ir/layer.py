@@ -6,6 +6,7 @@ from bifrost.text_utils import sanitize
 from bifrost.ir.bases import LayerBase, NetworkBase, ConnectionBase
 from typing import Dict, List, Set, Optional
 
+
 @dataclass
 class Layer(LayerBase):
     name: str

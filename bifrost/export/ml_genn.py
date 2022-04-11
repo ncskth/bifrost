@@ -29,32 +29,34 @@ _param_map = {
     def __init__(self, layer_map: Dict[str, Any]) -> None:
         self.layer_map = layer_map
 
-    def linear_weights(self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int) -> Output:
-        return f"_params[\"{layer}\"][\"params\"][\"weights\"][{channel_in}, 0]"
+    def linear_weights(
+        self, layer: str, channel_in: int, num_in_channels: int, num_out_neurons: int
+    ) -> Output:
+        return f'_params["{layer}"]["params"]["weights"][{channel_in}, 0]'
 
     def conv2d_weights(self, layer: str, channel_in: int, channel_out: int) -> Output:
-        return f"np.fliplr(np.flipud(_params[\"{layer}\"][\"params\"][\"weights\"][:, :, {channel_in}, {channel_out}]))"
+        return f'np.fliplr(np.flipud(_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]))'
         # return f"_params["{layer}"]["params"]["weights"][:, :, {channel_in}, {channel_out}]"
 
     def conv2d_strides(self, layer: str) -> Output:
-        return f"_params[\"{layer}\"][\"params\"][\"strides\"]"
+        return f'_params["{layer}"]["params"]["strides"]'
 
     def conv2d_padding(self, layer: str) -> Output:
-        return f"_params[\"{layer}\"][\"params\"][\"padding\"]"
+        return f'_params["{layer}"]["params"]["padding"]'
 
     def conv2d_pooling(self, layer: str) -> Output:
-        area = f"_params[\"{layer}\"][\"params\"].get(\"pool_shape\", None)"
-        stride = f"_params[\"{layer}\"][\"params\"].get(\"pool_stride\", None)"
+        area = f'_params["{layer}"]["params"].get("pool_shape", None)'
+        stride = f'_params["{layer}"]["params"].get("pool_stride", None)'
         return area, stride
 
     def cell_type(self, layer: str) -> Output:
-        return f"_params[\"{layer}\"][\"params\"][\"cell\"][\"target\"]"
+        return f'_params["{layer}"]["params"]["cell"]["target"]'
 
     def cell_parameter_dict(self, layer: str) -> Dict:
         return {}
 
     def neuron_parameter(self, layer: str, parameter_var_name: str) -> str:
-        return f"_params[\"{self.layer_map[layer]}\"][\"params\"][\"cell\"][{parameter_var_name}]"
+        return f'_params["{self.layer_map[layer]}"]["params"]["cell"][{parameter_var_name}]'
 
     def parameter_map_name(self, parameter_var_name: str) -> str:
         return f"_param_map[{parameter_var_name}]"
@@ -64,4 +66,3 @@ _param_map = {
             return self.if_parameters
         else:
             raise ValueError("Unknown neuron type ", cell)
-

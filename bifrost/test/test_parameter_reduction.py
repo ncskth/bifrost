@@ -3,13 +3,13 @@ import numpy as np
 
 
 def test_random_vector():
-    vector = np.random.uniform(0., 1., 10)
+    vector = np.random.uniform(0.0, 1.0, 10)
     reduced = try_reduce_param(vector)
     assert vector.shape == reduced.shape
 
 
 def test_same_vector():
-    vector = np.ones(10) * np.random.uniform(0., 1.)
+    vector = np.ones(10) * np.random.uniform(0.0, 1.0)
     reduced = try_reduce_param(vector)
     assert vector.size == 10
     assert np.isscalar(reduced)
@@ -19,9 +19,9 @@ def test_same_vector():
 def test_dim_0_array():
     # single value arrays are 'extracted' to a float
     # they should have the _item_ method to get the float value
-    value = np.array(np.random.uniform(0., 1.))
+    value = np.array(np.random.uniform(0.0, 1.0))
     assert np.ndim(value) == 0
-    assert hasattr(value, 'item')
+    assert hasattr(value, "item")
 
     reduced = try_reduce_param(value)
     assert np.isscalar(reduced)
@@ -29,11 +29,10 @@ def test_dim_0_array():
 
 
 def test_float():
-    value = np.random.uniform(0., 1.)
+    value = np.random.uniform(0.0, 1.0)
     assert np.ndim(value) == 0
-    assert not hasattr(value, 'item')
+    assert not hasattr(value, "item")
 
     reduced = try_reduce_param(value)
     assert np.isscalar(reduced)
     assert isinstance(reduced, float)
-

@@ -24,8 +24,9 @@ def attach_node(tree, node, inputs):
     for input in inputs:
         if input not in tree:
             tree.add_node(input)
-        if not input == node: # Avoid recurrence
+        if not input == node:  # Avoid recurrence
             tree.add_edge(input, node)
+
 
 def node_to_layer(n):
     p = Path(n)
