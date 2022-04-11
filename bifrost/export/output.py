@@ -38,7 +38,7 @@ def export_ethernet_output(
         f"{variable_name} = {population_labels}\n"
         f"live_spikes_connection_receive = "
         f"{SIMULATOR_NAME}.external_devices.SpynnakerLiveSpikesConnection(\n"
-        f"    receive_labels={variable_name},\n"
+        f"    receive_labels={variable_name},local_host=\"{layer.sink.host}\",\n"
         f"    local_port={layer.sink.port}, send_labels=None)\n"
     )
     ethernet_output = (

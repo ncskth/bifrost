@@ -80,12 +80,8 @@ def get_shapes(
     keys = list(modules.keys())
     last_module = modules[keys[0]]
     for i, k in enumerate(keys):
-        print(k)
-        print(x.shape)
-        print(modules[k].__class__.__name__)
         if isinstance(modules[k], torch.nn.Linear):
             x = x.view(1, -1)
-            print(x.shape)
 
         x = modules[k](x)
 
@@ -154,7 +150,7 @@ def torch_to_context(net: Network, torch_net: torch.nn.Module) -> ParameterConte
         map_key = str(layer)
         layer_map[map_key] = layer.key
 
-    return TorchContext(layer_map), {"state_dict": state_dict}
+    return TorchContext(layer_map)
 
 
 def module_to_ir(modules: Dict[str, torch.nn.Module], network: Network) -> Network:
@@ -276,22 +272,18 @@ def __get_connector(
         bias_key = keys[conn_idx] if hasattr(module, "bias") else DefaultLayerKeys.BIAS
         if "conv2d" in module_class_name:
             connector = ConvolutionConnector(str(k), pooling_key=pool_key)
-            break
         elif "dense" in module_class_name:
             connector = DenseConnector(str(k), pooling_key=pool_key)
-            break
         elif "linear" in module_class_name:
             connector = DenseConnector(str(k), pooling_key=pool_key)
             # todo: do we really need the Matrix connector?
             # connector = MatrixConnector(str(k))
-            break
         elif "avgpool2d" in module_class_name:
             pool_index = k
             continue
+        else:
+            raise ValueError("Unknown connector", module_class_name)
 
-        # this should not be reached
-        raise ValueError("Unknown connector", module_class_name)
-
-    connector.bias_key = bias_key
+        connector.bias_key = bias_key
 
     return connector

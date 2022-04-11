@@ -68,7 +68,7 @@ def export_connection(
 
 def export_synapse(connection: Connection[Layer, Layer]) -> Statement:
     synapse = connection.post.synapse
-    if isinstance(synapse, ConvolutionSynapse):
+    if isinstance(synapse, ConvolutionSynapse): 
         return Statement(f"{SIMULATOR_NAME}.Convolution()")
     elif isinstance(synapse, DenseSynapse):
         return Statement(f"{SIMULATOR_NAME}.PoolDense()")

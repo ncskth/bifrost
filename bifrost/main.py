@@ -11,7 +11,6 @@ from bifrost.ir.layer import NeuronLayer
 from bifrost.exporter import export_network
 from bifrost.ir.network import Network
 
-
 def export(model_import, text_shape, writer, record: Dict[str, List[int]]):
     # todo:
     #  * what to do with the text_shape argument?

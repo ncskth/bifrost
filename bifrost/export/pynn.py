@@ -41,7 +41,10 @@ class PyNNNeuronTypes(Enum):
 
 
 def export_structure(layer: Layer) -> Statement:
-    ratio = float(layer.shape[1]) / layer.shape[0]
+    try:
+        ratio = float(layer.shape[1]) / layer.shape[0]
+    except:
+        ratio = 1
     return Statement(f"Grid2D({ratio})", imports=["from pyNN.space import Grid2D"])
 
 
